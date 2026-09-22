@@ -1,9 +1,9 @@
 ---
-name: bkper-bookkeeping
+name: bkper
 description: Query Bkper ledgers, prepare financial reports and tax worksheets, and record draft transactions with receipts using Mutiro's tools. Use within the book's existing account structure.
 ---
 
-# Bkper bookkeeping
+# Bkper
 
 Work through Mutiro's connected Bkper tools. Authentication and allowed books
 are supplied by the connection; no CLI installation or separate login is needed.

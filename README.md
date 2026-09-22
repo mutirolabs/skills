@@ -15,7 +15,7 @@ Mutiro. Skills do not configure credentials, grant tools, or change permissions.
 | --- | --- |
 | `supabase-data` | `supabase_sql`: query, insert, update, delete, and export rows using the agent's `_data` role. |
 | `supabase-schema` | `supabase_admin_sql`: schema changes and migration data operations using `_schema`; owner-only by default. |
-| `bkper-bookkeeping` | `bkper_books`, `bkper_accounts`, `bkper_transactions`, `bkper_balances`, `bkper_record`: read the bound ledger and capture drafts with existing accounts. |
+| `bkper` | `bkper_books`, `bkper_accounts`, `bkper_transactions`, `bkper_balances`, `bkper_record`: read the bound ledger and capture drafts with existing accounts. |
 | `bkper-review` | The four Bkper read tools plus `bkper_post`, `bkper_check`, `bkper_trash`: transaction lifecycle changes, owner-only by default and configurable by the owner. |
 | `gmail` | `gmail_search`, `gmail_read`, `gmail_draft`, `gmail_send`: the connected Gmail mailbox, including draft versus send guidance. |
 | `mail` | `email_list_threads`, `email_read`, `email_get_attachment`, `email_send`, `email_reply`: the agent's own inbox, attachments, and threaded email. |
