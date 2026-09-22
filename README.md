@@ -1,52 +1,58 @@
-# Mutiro public skills
+# Mutiro skills
 
-Portable instructions for Supabase, Bkper, Gmail, and agent email workflows.
-Each folder under `skills/` contains a standard `SKILL.md` and any supporting
-resources. Use it with a harness that provides the tools described by the skill.
+Skills for agents working with Mutiro's tools. Each skill provides task-specific
+instructions, examples, and reference material to help an agent use those tools
+effectively.
 
-Mutiro-specific registration, discovery descriptions, tool requirements, and
-activation rules live in the Mutiro codebase. This repository contains public
-skill content; non-public and always-available core skills remain bundled with
-Mutiro. Skills do not configure credentials, grant tools, or change permissions.
+## Using the skills
 
-## Connection workflows
+Browse the [skills directory](skills/) and choose the skills relevant to your
+agent. Each folder contains a `SKILL.md` describing its purpose, expected tools,
+and instructions, along with any supporting resources.
 
-| Skill | Tool surface and boundary |
-| --- | --- |
-| `supabase-data` | `supabase_sql`: query, insert, update, delete, and export rows using the agent's `_data` role. |
-| `supabase-schema` | `supabase_admin_sql`: schema changes and migration data operations using `_schema`; owner-only by default. |
-| `bkper` | `bkper_books`, `bkper_accounts`, `bkper_transactions`, `bkper_balances`, `bkper_record`: read the bound ledger and capture drafts with existing accounts. |
-| `bkper-review` | The four Bkper read tools plus `bkper_post`, `bkper_check`, `bkper_trash`: transaction lifecycle changes, owner-only by default and configurable by the owner. |
-| `gmail` | `gmail_search`, `gmail_read`, `gmail_draft`, `gmail_send`: the connected Gmail mailbox, including draft versus send guidance. |
-| `mail` | `email_list_threads`, `email_read`, `email_get_attachment`, `email_send`, `email_reply`: the agent's own inbox, attachments, and threaded email. |
+Install a skill using your agent's skill installer, or copy its entire folder
+into your agent's skills directory. Keep the supporting files with `SKILL.md`.
+For versioned copies, download individual skill ZIPs from
+[releases](https://github.com/mutirolabs/skills/releases).
 
-Supabase isolates agents by schema, not conversations by row. Both connection
-roles bypass RLS. Bkper has no account/group structure editing or transaction
-field editing tools in Mutiro. The skills describe these boundaries; runtime
-and provider permissions enforce access. Each workflow is advertised only when
-all of its required tools are available to the current sender; disabling one
-hides that workflow without changing the underlying tools' permissions.
-Gmail sending is owner-only by default, so the combined Gmail skill becomes
-available to users when the owner opens sending as well. The agent's five email tools
-are available to users by default. There are six public skills in this catalog.
-The `mail` skill targets the email tool contract; an internal mail service or
-an external provider can implement that contract.
+If your agent supports installing skills from URLs, you can ask it directly.
+For example:
 
-The two Bkper skills adapt [Bkper's published skill](https://github.com/bkper/bkper-cli/tree/main/skill).
-Each includes the upstream core-concepts reference, its source revision,
-adaptation notice, and Apache-2.0 license. The entrypoint routes to the reference
-before ledger reasoning; each skill ZIP remains self-contained. Bookkeeping
-also includes financial-statement and tax references loaded only for those tasks.
+```text
+Install the Bkper skill from:
+https://github.com/mutirolabs/skills/releases/latest/download/bkper.zip
 
-## Authoring
+Include its supporting reference files, and use it when working with my
+Bkper books: querying transactions, preparing reports, and recording drafts.
+```
+
+Use these URL patterns for any skill:
+
+```text
+Latest release:
+https://github.com/mutirolabs/skills/releases/latest/download/<skill-name>.zip
+
+Specific version:
+https://github.com/mutirolabs/skills/releases/download/<version>/<skill-name>.zip
+```
+
+Replace `<skill-name>` with the skill's folder name and `<version>` with a
+published tag, such as `v0.1.0`. These URLs become available when the
+corresponding release assets are published.
+
+These skills expect the Mutiro tools described in their instructions. They can
+also be used with other agent environments that provide compatible tools.
+Installing a skill supplies guidance; the tools and their connections must
+already be available in your environment.
+
+## Contributing
 
 Add or edit `skills/<name>/SKILL.md` with YAML `name` and `description` fields.
-Names use lowercase letters, digits, and hyphens and match their directory.
-Keep guidance focused on the task and existing tool contract. Put supporting
-resources inside the same folder. Do not add `mutiro.*` metadata or depend on
-another skill being installed.
+Use lowercase letters, digits, and hyphens for names, matching the folder name.
+Explain when the skill applies, keep instructions focused on using the relevant
+tools, and include supporting references in the same folder.
 
-Validate and package locally:
+Validate and package the skills locally:
 
 ```sh
 python3 -m venv .venv
@@ -54,36 +60,11 @@ python3 -m venv .venv
 .venv/bin/python scripts/package.py --output dist
 ```
 
-## Publishing
+Maintainers publish reviewed content by tagging a stable version such as
+`v0.1.0`. The release workflow validates and packages each skill into its own ZIP.
 
-After merging reviewed content into `main`, push a new stable tag such as
-`v0.1.0`. The workflow validates the content, builds one ZIP per skill, uploads
-all assets to a draft release, then publishes it as latest. Published tags and
-assets stay fixed; corrections get another version. Failed publication leaves
-latest unchanged; remove a failed draft before retrying that unpublished tag.
+## Attribution
 
-Each ZIP has `SKILL.md` at its root. For example:
-
-```text
-https://github.com/mutirolabs/skills/releases/latest/download/supabase-data.zip
-https://github.com/mutirolabs/skills/releases/download/v0.1.0/supabase-data.zip
-```
-
-There is no remote catalog or whole-repository bundle. Adding a skill to Mutiro's
-available catalog requires a registration in Mutiro; updating the instructions
-of an existing registered skill only requires a skills release. Keep content
-compatible with the tool contracts it targets.
-
-## Mutiro loading
-
-Agent startup and skill listing perform no public-skill HTTP requests or cache
-validation. Mutiro downloads an eligible skill ZIP only on first use and checks
-for an update at most once per used skill per daemon lifetime. Subsequent loads
-share that complete copy. A failed update uses a validated cached copy; with no
-cache, only that skill request fails. Restart permits another attempt.
-
-`MUTIRO_SKILLS_RELEASE` selects `latest` (default), a stable tag, or `off`.
-Pinned cached skills work without an update request. Cached copies are visible
-under Agent → Published Skills. Owners customize using their ordinary skill
-installs, which take precedence and are never overwritten automatically; they
-can disable names in `.genie/skills/settings.yaml`.
+Skills adapted from other projects include source attribution and applicable
+license notices in their folders. Preserve those notices when reusing or
+modifying the material.
