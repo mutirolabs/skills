@@ -15,6 +15,23 @@ into your agent's skills directory. Keep the supporting files with `SKILL.md`.
 For versioned copies, download individual skill ZIPs from
 [releases](https://github.com/mutirolabs/skills/releases).
 
+If your agent supports installing skills from URLs, give it a prompt like:
+
+```text
+Install this skill https://github.com/mutirolabs/skills/releases/latest/download/<skill-name>.zip
+```
+
+To install a specific published version:
+
+```text
+Install this skill https://github.com/mutirolabs/skills/releases/download/<version>/<skill-name>.zip
+```
+
+Replace `<skill-name>` with the skill's folder name and `<version>` with a
+published tag, such as `v0.1.0`. For example, the latest Bkper skill uses
+`https://github.com/mutirolabs/skills/releases/latest/download/bkper.zip`.
+These URLs become available when the corresponding release assets are published.
+
 These skills expect the Mutiro tools described in their instructions. They can
 also be used with other agent environments that provide compatible tools.
 Installing a skill supplies guidance; the tools and their connections must
