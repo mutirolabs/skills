@@ -1,6 +1,6 @@
 ---
 name: gmail
-description: Search and read a connected Gmail account, prepare plain-text drafts for review, and send email from that account. Use for Gmail mailbox tasks; the agent's own inbox uses AgentMail instead.
+description: Search and read a connected Gmail account, prepare plain-text drafts for review, and send email from that account. Use for Gmail mailbox tasks; the agent's own inbox uses the mail skill instead.
 ---
 
 # Gmail

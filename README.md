@@ -18,7 +18,7 @@ Mutiro. Skills do not configure credentials, grant tools, or change permissions.
 | `bkper-bookkeeping` | `bkper_books`, `bkper_accounts`, `bkper_transactions`, `bkper_balances`, `bkper_record`: read the bound ledger and capture drafts with existing accounts. |
 | `bkper-review` | The four Bkper read tools plus `bkper_post`, `bkper_check`, `bkper_trash`: transaction lifecycle changes, owner-only by default and configurable by the owner. |
 | `gmail` | `gmail_search`, `gmail_read`, `gmail_draft`, `gmail_send`: the connected Gmail mailbox, including draft versus send guidance. |
-| `agentmail` | `email_list_threads`, `email_read`, `email_get_attachment`, `email_send`, `email_reply`: the agent's own inbox, attachments, and threaded email. |
+| `mail` | `email_list_threads`, `email_read`, `email_get_attachment`, `email_send`, `email_reply`: the agent's own inbox, attachments, and threaded email. |
 
 Supabase isolates agents by schema, not conversations by row. Both connection
 roles bypass RLS. Bkper has no account/group structure editing or transaction
@@ -27,8 +27,10 @@ and provider permissions enforce access. Each workflow is advertised only when
 all of its required tools are available to the current sender; disabling one
 hides that workflow without changing the underlying tools' permissions.
 Gmail sending is owner-only by default, so the combined Gmail skill becomes
-available to users when the owner opens sending as well. AgentMail's five tools
+available to users when the owner opens sending as well. The agent's five email tools
 are available to users by default. There are six public skills in this catalog.
+The `mail` skill targets the email tool contract; an internal mail service or
+an external provider can implement that contract.
 
 The two Bkper skills adapt [Bkper's published skill](https://github.com/bkper/bkper-cli/tree/main/skill).
 Each includes the upstream core-concepts reference, its source revision,

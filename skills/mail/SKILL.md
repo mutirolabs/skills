@@ -1,6 +1,6 @@
 ---
-name: agentmail
-description: Read threads, retrieve attachments, send messages, and reply by email from the agent's own AgentMail address. Use for agent inbox tasks and incoming email events; a connected personal Gmail account uses the Gmail skill instead.
+name: mail
+description: Read threads, retrieve attachments, send messages, and reply by email from the agent's own email address. Use for agent inbox tasks and incoming email events; a connected personal Gmail account uses the Gmail skill instead.
 ---
 
 # Agent email
