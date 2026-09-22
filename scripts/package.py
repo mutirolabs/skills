@@ -29,7 +29,8 @@ def skill_files(directory):
                 raise ValueError(f"{path}: backslashes are not supported in resource names")
             data = path.read_bytes()
             size += len(data)
-            files.append((path.relative_to(directory).as_posix(), data))
+            mode = 0o644 | (path.stat().st_mode & 0o111)
+            files.append((path.relative_to(directory).as_posix(), data, mode))
     if size > 25 * 1024 * 1024:
         raise ValueError(f"{directory}: exceeds 25 MiB expanded")
     content = (directory / "SKILL.md").read_text(encoding="utf-8")
@@ -67,10 +68,11 @@ def main():
         for directory, files in validated:
             archive = args.output / f"{directory.name}.zip"
             with zipfile.ZipFile(archive, "w", compression=zipfile.ZIP_DEFLATED) as output:
-                for name, data in files:
+                for name, data, mode in files:
                     entry = zipfile.ZipInfo(name, date_time=(2020, 1, 1, 0, 0, 0))
                     entry.compress_type = zipfile.ZIP_DEFLATED
-                    entry.external_attr = 0o100644 << 16
+                    entry.create_system = 3  # Unix permission bits, independent of the build host.
+                    entry.external_attr = (0o100000 | mode) << 16
                     output.writestr(entry, data)
             if archive.stat().st_size > 5 * 1024 * 1024:
                 archive.unlink()
