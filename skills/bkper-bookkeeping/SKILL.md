@@ -1,12 +1,19 @@
 ---
 name: bkper-bookkeeping
-description: Query Bkper books, accounts, transactions, and balances, and record draft transactions with receipts using Mutiro's Bkper tools. Use for ledger questions and transaction capture within existing account structures.
+description: Query Bkper ledgers, prepare financial reports and tax worksheets, and record draft transactions with receipts using Mutiro's tools. Use within the book's existing account structure.
 ---
 
 # Bkper bookkeeping
 
 Work through Mutiro's connected Bkper tools. Authentication and allowed books
 are supplied by the connection; no CLI installation or separate login is needed.
+
+## Accounting model
+
+Before reasoning about accounts, movements, balances, or transaction states,
+read [references/core-concepts.md](references/core-concepts.md). Bkper's model
+applies regardless of the tool interface; generic debit/credit intuition is
+not a substitute for its account types, groups, and time semantics.
 
 ## Book and permission boundaries
 
@@ -29,29 +36,13 @@ Posting, checking, and trashing are separate review actions, owner-only by
 default; owners may open those tools to users. Recording a draft does not
 automatically perform any of those transitions.
 
-## Understand movements before choosing accounts
+## Resolve the movement
 
-Bkper models an amount moving **from** one account **to** another. Every posted
-movement has two sides, keeping the ledger balanced. `from_account` is the
-credit/source account; `to_account` is the debit/destination account. The tool
-requires existing IDs, not account names.
-
-| Account type | Meaning and time basis |
-| --- | --- |
-| Asset | Resources held; cumulative position at a date. |
-| Liability | Obligations; cumulative position at a date. |
-| Incoming | Revenue sources; activity in a period. |
-| Outgoing | Expenses and costs; activity in a period. |
-
-Resolve names and IDs with `bkper_accounts` and preserve the book's own model.
-For example, using accounts that actually exist in the book:
-
-- Cash expense: Bank → Expense.
-- Credit-card purchase: Credit Card → Expense; later payment: Bank → Credit Card.
-- Sale on credit: Sales → Receivable; later collection: Receivable → Bank.
-
-A settlement is not another expense or sale. Do not categorize from an account
-name alone when its type or the owner's model differs.
+Resolve existing names and IDs with `bkper_accounts` and preserve the book's
+model. `from_account` is the credit/source ID; `to_account` is the
+debit/destination ID. A settlement is not another expense or sale. Use the
+reference's flow examples, then choose accounts from the actual book rather
+than copying example names or categorizing by name alone.
 
 ## Query records and balances
 
@@ -63,8 +54,14 @@ query when necessary. Do not treat one page as the complete history.
 
 Use `bkper_balances` for balances and report totals. Do not calculate an account
 balance by summing a transaction page or reversing signs from generic accounting
-intuition. For query syntax, date boundaries, and financial reports, read
-[references/queries-and-reports.md](references/queries-and-reports.md).
+intuition. Read only the reference needed for the task:
+
+- [references/queries.md](references/queries.md): query syntax, date boundaries,
+  pagination, and review links.
+- [references/reporting/financial-statements.md](references/reporting/financial-statements.md):
+  balance sheets, P&L, reporting roots, and reproducible ledger-derived reports.
+- [references/reporting/taxes.md](references/reporting/taxes.md): tax worksheets,
+  tax-account positions versus activity, and supplied/reviewed rule calculations.
 
 ## Capture a draft
 

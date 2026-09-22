@@ -6,7 +6,7 @@ https://github.com/bkper/bkper-cli/tree/1f7f638f754d7e0d984d965cf8f5f4c19582d5e6
 Source revision: `1f7f638f754d7e0d984d965cf8f5f4c19582d5e6`.
 Source documents: `SKILL.md`, `references/core/core-concepts.md`,
 `references/cli/data-management.md`, and
-`references/reporting/financial-statements.md`.
+`references/reporting/financial-statements.md`, and `references/reporting/taxes.md`.
 
 Bkper distributes that material under Apache License 2.0; a copy is included
 in [LICENSE](LICENSE).
@@ -16,3 +16,14 @@ draft capture from permission-scoped transaction transitions; removed CLI setup,
 account/group administration, app development, unsupported commands, and the
 upstream blanket per-command approval process. Accounting concepts, lifecycle
 semantics, query boundaries, reporting guidance, and review links were adapted.
+
+`references/core-concepts.md` retains the upstream core model and examples,
+with a Mutiro tool-scope notice and review wording adjusted to the owner's
+configurable permissions. Each Bkper archive includes its own copy so it can
+be installed independently.
+
+The reporting references retain deterministic calculation, root-group, period,
+and tax-rule provenance principles. CLI/app recipes are replaced by Mutiro's
+balance/query tools and available owner-provided calculation routes. The tax
+reference omits mandatory OpenAccountants bundle/referral calls and adapts
+rule discovery to the harness's available research tools.

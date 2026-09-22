@@ -16,3 +16,8 @@ draft capture from permission-scoped transaction transitions; removed CLI setup,
 account/group administration, app development, unsupported commands, and the
 upstream blanket per-command approval process. Accounting concepts, lifecycle
 semantics, query boundaries, reporting guidance, and review links were adapted.
+
+`references/core-concepts.md` retains the upstream core model and examples,
+with a Mutiro tool-scope notice and review wording adjusted to the owner's
+configurable permissions. Each Bkper archive includes its own copy so it can
+be installed independently.
