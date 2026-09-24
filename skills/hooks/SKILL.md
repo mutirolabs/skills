@@ -155,13 +155,14 @@ const r = tools.decide({
 });
 if (r.error) throw new Handoff("triage unavailable: " + r.error.message);
 r.answers.kind.choice      // one of your keys
-r.answers.urgency.score    // 0-based level
+r.answers.urgency.score    // 0-based level, fractional (1.39: between "today" and "urgent")
 r.answers.human.noul       // 0 to 1
 r.backend                  // "jev:…" or "model:…"
 ```
 
 A `choice` returns one of your `criteria` keys, never anything else. A
-`score` returns the 0-based index of the level. A `noul` returns a
+`score` returns the 0-based position on the scale, fractional when the
+backend calibrates (compare with `>=`, never `===`). A `noul` returns a
 probability. `confidence` and `probabilities` are present when the
 backend can calibrate (Jev, when the owner set a `JEV_API_KEY` secret)
 and absent when it cannot (the agent's own model): treat absence as
