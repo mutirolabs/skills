@@ -45,6 +45,15 @@ also be used with other agent environments that provide compatible tools.
 Installing a skill supplies guidance; the tools and their connections must
 already be available in your environment.
 
+## Skills
+
+| Skill | What it covers |
+| --- | --- |
+| `hooks` | The agent's hooks: the owner's JavaScript in `.genie/hooks/` that the Mutiro host runs before a message becomes a turn and before a tool call runs. Written by the agent on the owner's instruction only. |
+| `supabase-data`, `supabase-schema` | Row operations and schema changes in the agent's Supabase schema. |
+| `bkper`, `bkper-review` | Reading a bound Bkper ledger, capturing drafts, and reviewing or posting them. |
+| `gmail`, `mail` | The connected Gmail mailbox, and the agent's own email inbox. |
+
 ## Contributing
 
 Add or edit `skills/<name>/SKILL.md` with YAML `name` and `description` fields.
