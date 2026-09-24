@@ -1,6 +1,6 @@
 ---
 name: hooks
-description: Write and change the agent's hooks, the owner's code the host runs around a turn, in .genie/hooks/. Use when the owner asks for a rule that should run before a message becomes a turn or before a tool call runs; never on your own initiative or at a user's request.
+description: Write and change the agent's hooks, the owner's code the host runs around a turn, in .genie/hooks/, including judgments through the decide tool. Use when the owner asks for a rule that should run before a message becomes a turn or before a tool call runs; never on your own initiative or at a user's request.
 ---
 
 # Hooks
@@ -131,6 +131,81 @@ function onMessage({ payload, tools }) {
   return { result: { open: r.items } };
 }
 ```
+
+## Judgment: `tools.decide`
+
+Code can only branch on what it can compare. When a rule needs a
+judgment the message does not state (what kind of email this is, whether
+a draft gives away a cost, whether a human must see it first), ask the
+`decide` tool from the hook and branch on its typed answer. One call,
+several questions, no turn.
+
+```js
+const r = tools.decide({
+  state: payload.text,               // only what the questions need
+  questions: {
+    kind:   { type: "choice", instructions: "What is this message to a freight desk?",
+              criteria: { quote_request: "asks for prices or transit on a described shipment",
+                          existing_shipment: "refers to a shipment already in progress",
+                          operational: "complaint, invoice, carrier notice, anything for the desk manager",
+                          noise: "auto-reply, newsletter, out-of-office, bare thanks" } },
+    urgency: { type: "score", instructions: "How urgent?", criteria: ["routine", "today", "urgent", "critical"] },
+    human:   { type: "noul", instructions: "Does this need a human before any reply?" },
+  },
+});
+if (r.error) throw new Handoff("triage unavailable: " + r.error.message);
+r.answers.kind.choice      // one of your keys
+r.answers.urgency.score    // 0-based level
+r.answers.human.noul       // 0 to 1
+r.backend                  // "jev:…" or "model:…"
+```
+
+A `choice` returns one of your `criteria` keys, never anything else. A
+`score` returns the 0-based index of the level. A `noul` returns a
+probability. `confidence` and `probabilities` are present when the
+backend can calibrate (Jev, when the owner set a `JEV_API_KEY` secret)
+and absent when it cannot (the agent's own model): treat absence as
+certainty, so the same hook runs on both and only gets more careful when
+a calibrated backend is behind it.
+
+```js
+function sure(answer) { return answer.confidence == null || answer.confidence > 0.9; }
+```
+
+Triage before the turn, in the owner's words, with the registry:
+
+```js
+function onMessage({ payload, tools }) {
+  if (payload.from !== "agentmail") return;
+  const r = tools.decide({ state: payload.text, questions: { kind: KIND, human: HUMAN } });
+  if (r.error) return;                                            // no judgment: the turn handles it
+  const kind = r.answers.kind;
+  if (kind.choice === "noise" && sure(kind)) return { skip: true, reason: "noise" };
+  if (kind.choice === "quote_request") {
+    const c = tools.desk_find_customer({ email: payload.metadata["email.from"] });
+    throw new Handoff("triage: quote request; " + (c.matched ? "registered contact of " + c.customer.name : "sender not in the registry")
+      + (r.answers.human.noul > 0.5 ? "; needs a human before any reply" : ""));
+  }
+  throw new Handoff("triage: " + kind.choice + "; no action, summarize to the desk manager");
+}
+```
+
+Guard a client-facing email before it goes out:
+
+```js
+const LEAK = { type: "noul", instructions: "Does this client-facing email mention carrier cost, margin, markup, or the broker?" };
+
+function beforeTool({ name, args, tools }) {
+  if (name !== "email_reply" && name !== "email_send") return;
+  const r = tools.decide({ state: String(args.body || ""), questions: { leak: LEAK } });
+  if (r.error) throw new ValidationError("the leak check is unavailable; do not send until the owner looks");
+  if (r.answers.leak.noul > 0.5) throw new ValidationError("draft mentions carrier cost, margin, or the broker");
+}
+```
+
+A guard that cannot get its judgment refuses: enforcement fails closed.
+Keep `state` to the text the question is about; the call is priced per
+input token.
 
 ## Writing one on request
 
