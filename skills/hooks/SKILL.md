@@ -194,23 +194,25 @@ if (r.error) throw new Handoff("triage unavailable: " + r.error.message);
 r.answers.kind.choice      // one of your keys
 r.answers.urgency.score    // 0-based level, fractional (1.39: between "today" and "urgent")
 r.answers.human.noul       // 0 to 1
-r.backend                  // "jev:…" or "model:…"
+r.backend                  // "systemone:<model>" or "model:<model>"
 ```
 
 A `choice` returns one of your `criteria` keys, never anything else. A
 `score` returns the 0-based position on the scale, fractional when the
 backend calibrates (compare with `>=`, never `===`). A `noul` returns a
 number from 0 to 1 on every backend, but not the same kind of number:
-a calibrated backend (Jev) returns a probability, and a model returns
-its own likelihood of yes, which is not calibrated. `confidence` and
+a calibrated backend (the System One API, whose model is Jev) returns a
+probability, and a chat model returns its own likelihood of yes, which
+is not calibrated. `confidence` and
 `probabilities` are present only from a calibrated backend and absent
 from a model, so their presence is how a hook tells the two apart.
 Threshold a `noul` at 0.5 unless the answer is calibrated; a rule like
-"escalate above 0.8" means one thing on Jev and another on a model, so
-gate a fine threshold on `confidence` being present. Which backend
-answers is the owner's setup, not the hook's: a `JEV_API_KEY` secret
-selects Jev, the vendor or Mutiro's own decision service, and
-`r.backend` names the model that answered. Treat absent `confidence` as
+"escalate above 0.8" means one thing on a calibrated backend and another
+on a model, so gate a fine threshold on `confidence` being present.
+Which backend answers is the owner's setup, not the hook's: a
+`SYSTEMONE_API_KEY` secret selects the System One contract, the vendor
+or Mutiro's own decision service, and `r.backend` says which path
+(`systemone:` or `model:`) and which model answered. Treat absent `confidence` as
 "the model's best guess" rather than as certainty.
 
 ```js
