@@ -200,14 +200,23 @@ r.backend                  // "jev:…" or "model:…"
 A `choice` returns one of your `criteria` keys, never anything else. A
 `score` returns the 0-based position on the scale, fractional when the
 backend calibrates (compare with `>=`, never `===`). A `noul` returns a
-probability. `confidence` and `probabilities` are present when the
-backend can calibrate (Jev, when the owner set a `JEV_API_KEY` secret)
-and absent when it cannot (the agent's own model): treat absence as
-certainty, so the same hook runs on both and only gets more careful when
-a calibrated backend is behind it.
+number from 0 to 1 on every backend, but not the same kind of number:
+a calibrated backend (Jev) returns a probability, and a model returns
+its own likelihood of yes, which is not calibrated. `confidence` and
+`probabilities` are present only from a calibrated backend and absent
+from a model, so their presence is how a hook tells the two apart.
+Threshold a `noul` at 0.5 unless the answer is calibrated; a rule like
+"escalate above 0.8" means one thing on Jev and another on a model, so
+gate a fine threshold on `confidence` being present. Which backend
+answers is the owner's setup, not the hook's: a `JEV_API_KEY` secret
+selects Jev, the vendor or Mutiro's own decision service, and
+`r.backend` names the model that answered. Treat absent `confidence` as
+"the model's best guess" rather than as certainty.
 
 ```js
-function sure(answer) { return answer.confidence == null || answer.confidence > 0.9; }
+function calibrated(answer) { return answer.confidence != null; }
+function yes(answer, fine) { return answer.noul > (calibrated(answer) ? fine : 0.5); }
+// yes(r.answers.human, 0.8): 0.8 on a calibrated backend, 0.5 on a model
 ```
 
 Triage before the turn, in the owner's words, with the registry:
