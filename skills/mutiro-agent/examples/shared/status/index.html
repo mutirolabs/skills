@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Notes status</title>
+    <style>
+      body { font: 15px/1.4 system-ui, sans-serif; margin: 16px; }
+      table { border-collapse: collapse; width: 100%; }
+      td, th { border-bottom: 1px solid #ddd; padding: 6px 8px; text-align: left; }
+      #status { color: #666; }
+      .table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+      @media (max-width: 600px) { body { margin: 12px; } td, th { padding: 8px 6px; } h1 { font-size: 20px; } }
+    </style>
+  </head>
+  <body>
+    <h1>Notes</h1>
+    <p id="status">Loading…</p>
+    <div class="table-wrap"><table><thead><tr><th>Subject</th><th>Notes</th><th>Last</th></tr></thead><tbody id="rows"></tbody></table></div>
+    <script>
+      // mutiro.request(action, payload) is the page's fetch. handlers.ts beside
+      // this file answers loadStatus without an agent turn; HANDLERS.md is
+      // the same contract in prose, for the agent when there is no function.
+      (async () => {
+        const status = document.getElementById("status");
+        try {
+          const data = await mutiro.request("loadStatus", { limit: 50 });
+          const body = document.getElementById("rows");
+          for (const r of data.subjects) {
+            const tr = document.createElement("tr");
+            for (const v of [r.subject, r.count, r.last]) { const td = document.createElement("td"); td.textContent = String(v); tr.appendChild(td); }
+            body.appendChild(tr);
+          }
+          status.textContent = data.subjects.length + " subjects · " + data.updated_at;
+        } catch (e) {
+          status.textContent = "Could not load: " + (e && e.message ? e.message : e);
+        }
+      })();
+    </script>
+  </body>
+</html>

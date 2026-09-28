@@ -1,0 +1,25 @@
+name: note-card-template
+description: >
+  A card is the skill's template, not a composition: the <style> block
+  survives verbatim and every placeholder is filled. Pattern: extract the
+  html fence and check the CSS with contains_lines against the skill that
+  owns the template, so the prose may be localized and the check still
+  bites; not_contains "{{" catches an unfilled placeholder.
+role: owner
+timeout_seconds: 180
+extract: html_block
+prompt: |
+  Behavior check (load the note-card skill; no other tools; do not send
+  anything): render this note as a card and show the full HTML in one
+  ```html block, nothing else.
+  Subject: acme · Author: ana · Date: 2026-09-28
+  Text: Prefers invoices by email; pays on the 10th.
+checks:
+  - contains_lines:
+      file: ../.genie/skills/note-card/SKILL.md
+      between: ["<style>", "</style>"]
+  - contains: 'class="note-card"'
+  - contains: "acme"
+  - contains: "2026-09-28"
+  - regex: "(?i)invoices"
+  - not_contains: "{{"

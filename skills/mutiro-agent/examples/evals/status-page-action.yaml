@@ -1,0 +1,14 @@
+name: status-page-action
+description: >
+  The status page's loadStatus request is answered by handlers.ts on the
+  host, in shape, without a turn. Pattern: a case with no prompt is a
+  handler test; its checks run on the result JSON (or on "error: <text>").
+role: owner
+action:
+  name: loadStatus
+  source: shared/status/index.html
+  payload: '{"limit": 10}'
+  checks:
+    - regex: '"subjects":\s*\['
+    - regex: '"updated_at":\s*"\d{4}-\d{2}-\d{2}T'
+    - not_contains: "error:"

@@ -1,0 +1,15 @@
+name: user-context-present
+description: >
+  The per-user layer (users/fixture_user/AGENTS.md) is actually injected
+  in that user's conversation. Pattern: prove context is present, not that
+  a tool could fetch it; an owner-role probe masks this by silently
+  reading the file. Run as the fixture user: --role user from its login.
+role: user
+timeout_seconds: 120
+prompt: |
+  No tools, no file reads. Quote the first sentence under the "Scope"
+  heading of the working notes you have for me, verbatim, or answer
+  exactly NO_MANUAL.
+checks:
+  - contains: "fixture_user is a test member"
+  - not_contains: "NO_MANUAL"
