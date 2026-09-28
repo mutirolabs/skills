@@ -177,13 +177,18 @@ as an instruction is a hope; as a `beforeTool` gate it is a fact, and the
 model learns the rule from the refusal message. Put invariants that must
 hold on every call here, and leave judgement to the model.
 
-### Judgment inside a hook: `tools.decide`
+### Judgment in code: `tools.decide`
 
 Code can branch only on what it can compare. When a rule needs a judgment
-the message does not state (what kind of message this is, whether a draft
+the data does not state (what kind of message this is, whether a draft
 gives away a cost, whether a human must see it first), ask the `decide`
-tool from the hook and branch on its typed answer: one call, several
-questions, no turn.
+tool and branch on its typed answer: one call, several questions, no
+turn. It is the System One call, answered by Jev, a model built for typed
+decisions rather than prose, and it is available to hooks, to tool
+extensions and to the model alike. It is what makes a hook or an extension
+able to hold a rule that needs judgment without becoming a turn, and it
+is priced per input token, so `state` carries only what the questions
+need.
 
 ```ts
 const r = tools.decide({
@@ -202,10 +207,11 @@ r.answers.human.noul;    // 0 to 1
 r.backend;               // "systemone:<model>" or "model:<model>"
 ```
 
-Two backends answer, and they do not mean the same thing by a number. A
-calibrated backend (the System One API, selected by a `SYSTEMONE_API_KEY`
-agent secret) returns probabilities and includes `confidence`; a chat model
-returns its own likelihood of yes and omits it. Threshold a `noul` at 0.5
+Two backends answer, and they do not mean the same thing by a number. The
+calibrated backend (System One's Jev, selected by a `SYSTEMONE_API_KEY`
+agent secret) returns probabilities and includes `confidence`; without the
+secret the agent's own chat model answers with its likelihood of yes and
+omits it. Threshold a `noul` at 0.5
 unless `confidence` is present; a rule like "escalate above 0.8" means
 one thing calibrated and another on a model. The owner's setup decides
 which backend runs, never the hook.

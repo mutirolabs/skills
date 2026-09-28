@@ -83,6 +83,9 @@ agent, bundled by the runtime with no build step:
   `onMessage` and `beforeReply` shape the turn's edges.
 - **Page handlers** (`handlers.ts` beside a page under `shared/`): a
   page's requests answered deterministically, without a turn.
+- **`tools.decide`**, from any of the three: a typed judgment (a choice, a
+  score, a yes/no) answered by System One's Jev in one call, so code can
+  hold a rule that needs judgment without becoming a turn.
 
 `examples/` is a complete small config plane covering all three, with
 tests and a `dev run` for each; copy from it rather than starting blank.
