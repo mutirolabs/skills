@@ -177,6 +177,71 @@ as an instruction is a hope; as a `beforeTool` gate it is a fact, and the
 model learns the rule from the refusal message. Put invariants that must
 hold on every call here, and leave judgement to the model.
 
+### Judgment inside a hook: `tools.decide`
+
+Code can branch only on what it can compare. When a rule needs a judgment
+the message does not state (what kind of message this is, whether a draft
+gives away a cost, whether a human must see it first), ask the `decide`
+tool from the hook and branch on its typed answer: one call, several
+questions, no turn.
+
+```ts
+const r = tools.decide({
+  state: payload.text, // only what the questions need; the call is priced per input token
+  questions: {
+    kind: { type: "choice", instructions: "What is this message to a notes desk?",
+            criteria: { request: "asks for something to be done", update: "reports a fact about a payee", noise: "auto-reply, newsletter, bare thanks" } },
+    urgency: { type: "score", instructions: "How urgent?", criteria: ["routine", "today", "urgent"] },
+    human: { type: "noul", instructions: "Does this need a human before any reply?" },
+  },
+});
+if (r.error) throw new Handoff("triage unavailable: " + r.error.message);
+r.answers.kind.choice;   // one of your criteria keys, never anything else
+r.answers.urgency.score; // 0-based position on the scale, fractional when calibrated: compare with >=
+r.answers.human.noul;    // 0 to 1
+r.backend;               // "systemone:<model>" or "model:<model>"
+```
+
+Two backends answer, and they do not mean the same thing by a number. A
+calibrated backend (the System One API, selected by a `SYSTEMONE_API_KEY`
+agent secret) returns probabilities and includes `confidence`; a chat model
+returns its own likelihood of yes and omits it. Threshold a `noul` at 0.5
+unless `confidence` is present; a rule like "escalate above 0.8" means
+one thing calibrated and another on a model. The owner's setup decides
+which backend runs, never the hook.
+
+```ts
+const calibrated = (a: { confidence?: number }) => a.confidence != null;
+const yes = (a: { noul: number; confidence?: number }, fine: number) => a.noul > (calibrated(a) ? fine : 0.5);
+```
+
+Two shapes that recur. Triage before the turn, handing the model a fact:
+
+```ts
+export const onMessage: OnMessage = ({ payload, tools }) => {
+  if (payload.role !== "user") return;
+  const r = tools.decide({ state: payload.text, questions: { kind: KIND, human: HUMAN } });
+  if (r.error) return; // no judgment: the turn handles it
+  if (r.answers.kind.choice === "noise" && yes(r.answers.kind, 0.9)) return { skip: true, reason: "noise" };
+  throw new Handoff("triage: " + r.answers.kind.choice + (yes(r.answers.human, 0.8) ? "; needs a human before any reply" : ""));
+};
+```
+
+And a guard on what leaves, which fails closed when it cannot judge:
+
+```ts
+export const beforeTool: BeforeTool = ({ name, args, tools }) => {
+  if (name !== "email_send" && name !== "email_reply") return;
+  const r = tools.decide({ state: String(args.body || ""), questions: { leak: { type: "noul", instructions: "Does this client-facing text mention internal cost or margin?" } } });
+  if (r.error) throw new ValidationError("the leak check is unavailable; do not send until the owner looks");
+  if (r.answers.leak.noul > 0.5) throw new ValidationError("draft mentions internal cost or margin");
+};
+```
+
+Hooks are developer code: the agent cannot write or change them, so a
+rule an owner asks for in conversation becomes a change in the repo, a
+test in `tests/`, and a push.
+
 ## Page handlers
 
 A page under `shared/` (or anywhere under the root) is HTML the user opens
