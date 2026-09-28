@@ -53,6 +53,7 @@ already be available in your environment.
 | `supabase-data`, `supabase-schema` | Row operations and schema changes in the agent's Supabase schema. |
 | `bkper`, `bkper-review` | Reading a bound Bkper ledger, capturing drafts, and reviewing or posting them. |
 | `gmail`, `mail` | The connected Gmail mailbox, and the agent's own email inbox. |
+| `mutiro-agent` | For the developer's own harness (Claude Code and the like), not the agent: the guide to building and tuning a Mutiro agent, from creating one to structure, instructions, tool extensions, hooks, page handlers, tests, evals and deploys, with a runnable example config plane under `examples/`. |
 
 ## Contributing
 

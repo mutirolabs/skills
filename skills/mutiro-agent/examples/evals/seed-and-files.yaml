@@ -1,0 +1,25 @@
+name: seed-and-files
+description: >
+  Given a file the runner seeded, the agent produces the file it was asked
+  for, where it was asked, with the content the input determines. Pattern:
+  assert on files, not on the reply that describes them; the seed lands in
+  shared/ (the section an owner may write) and the output is read from
+  the agent's working directory (section other, the default).
+role: owner
+timeout_seconds: 240
+seed:
+  - path: inbox/payees.csv
+    file: fixtures/payees.csv
+prompt: |
+  Read shared/inbox/payees.csv and write payees-summary.md in your working
+  directory: one line per distinct payee, alphabetical, as "- <payee> (<city>)".
+  Do not add notes, do not send anything. Reply with just the word DONE.
+checks:
+  - contains: "DONE"
+files:
+  - path: payees-summary.md
+    checks:
+      - regex: "(?m)^- acme \\(Phoenix\\)$"
+      - regex: "(?m)^- globex \\(Springfield\\)$"
+      - regex: "(?m)^- initech \\(Austin\\)$"
+      - not_regex: "(?m)^- acme.*\\n(?:.*\\n)*^- acme"

@@ -1,0 +1,17 @@
+name: memoryless-tool-choice
+description: >
+  From a cleared context the agent reaches for the tool, not for memory:
+  asked how many notes exist about a subject, it names notes_list as the
+  call it would make. Pattern: memoryless cases say so, and check the tool
+  the agent names rather than a number it might recall.
+role: owner
+timeout_seconds: 120
+prompt: |
+  Context is clear; you have no memory of earlier sessions. Without
+  calling any tool, answer in EXACTLY two lines, nothing else:
+  TOOL: <the one tool you would call to answer "how many notes about acme", or NONE>
+  ARGS: <its arguments as JSON>
+checks:
+  - regex: "TOOL: *notes_list"
+  - regex: "ARGS: *\\{.*\"subject\" *: *\"acme\""
+  - not_regex: "(?i)TOOL: *(NONE|memory|recall)"

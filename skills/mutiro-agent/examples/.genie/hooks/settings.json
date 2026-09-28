@@ -1,0 +1,1 @@
+{ "onMessage": { "enabled": true }, "beforeTool": { "enabled": true }, "beforeReply": { "enabled": true } }

@@ -1,0 +1,4 @@
+{
+  "compilerOptions": { "target": "ES2020", "module": "ESNext", "moduleResolution": "Bundler", "strict": true, "noEmit": true, "lib": ["ES2020"], "types": [] },
+  "include": ["mutiro.d.ts", ".genie/tools/**/*.ts", ".genie/hooks/**/*.ts", "shared/**/*.ts", "tests/**/*.ts"]
+}
