@@ -9,12 +9,23 @@ do* is decided here.
 ## Install the CLI
 
 ```bash
-curl -sSL https://mutiro.com/downloads/install.sh | bash   # MUTIRO_CHANNEL=beta by default
+curl -sSL https://mutiro.com/downloads/install.sh | bash   # macOS, Linux; MUTIRO_CHANNEL=beta by default
 mutiro version
 mutiro auth login <email>                                   # passwordless; a code arrives by email
 ```
 
-`INSTALL_DIR` overrides the target directory. `mutiro --help` is the
+On Windows, from PowerShell: `irm https://mutiro.com/downloads/install.ps1 | iex`
+(the `curl | bash` line also works from Git Bash). The install adds `mutiro`
+to the user PATH, which only shells started afterwards see; until the
+session restarts, call it as `$LOCALAPPDATA/Programs/Mutiro/bin/mutiro.exe`.
+
+Your shell has no terminal to type a code into, so `auth login` and
+`auth signup` send the code and print the command that finishes the flow.
+Ask the person for the code from their email, then run
+`mutiro auth verify <email> <code>`. If the command instead fails with
+`verification code is required`, the code was still sent: same next step.
+
+`INSTALL_DIR` (`MUTIRO_INSTALL_DIR` on Windows) overrides the target directory. `mutiro --help` is the
 reference for the installed version; every command below has `--help`.
 
 ## Hosted is the path
