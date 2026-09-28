@@ -207,14 +207,21 @@ r.answers.human.noul;    // 0 to 1
 r.backend;               // "systemone:<model>" or "model:<model>"
 ```
 
-Two backends answer, and they do not mean the same thing by a number. The
-calibrated backend (System One's Jev, selected by a `SYSTEMONE_API_KEY`
-agent secret) returns probabilities and includes `confidence`; without the
-secret the agent's own chat model answers with its likelihood of yes and
-omits it. Threshold a `noul` at 0.5
-unless `confidence` is present; a rule like "escalate above 0.8" means
-one thing calibrated and another on a model. The owner's setup decides
-which backend runs, never the hook.
+Hosted agents call Mutiro's System One service. The platform supplies the
+endpoint and credentials and selects the backend; the owner does not need
+to set a `SYSTEMONE_API_KEY` agent secret. Omitting that secret does not
+switch a hosted agent to its chat model.
+
+For **self-hosted agents**, a `SYSTEMONE_API_KEY` secret selects the System
+One API; without it, the agent's own Gemini model answers (a Gemini
+provider is required for this fallback). That choice belongs to the
+owner's runtime setup, never the hook.
+
+The two kinds of answer do not mean the same thing by a number. The
+calibrated backend, System One's Jev, returns probabilities and includes
+`confidence`; the chat-model backend returns its likelihood of yes and
+omits it. Threshold a `noul` at 0.5 unless `confidence` is present; a rule
+like "escalate above 0.8" means one thing calibrated and another on a model.
 
 ```ts
 const calibrated = (a: { confidence?: number }) => a.confidence != null;
