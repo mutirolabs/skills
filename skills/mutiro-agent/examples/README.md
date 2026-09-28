@@ -7,10 +7,10 @@ every file is a template you can copy into a real agent.
 ```bash
 cd .claude/skills/mutiro-agent/examples
 mutiro agent dev check .          # tools, hooks and the page handler load
-mutiro agent dev test .           # 19 tests
+mutiro agent dev test .           # 20 tests
 mutiro agent evals run ./evals --agent <agent>   # the live suite, once the agent carries this config
 mutiro agent dev run . tool:notes_list --args '{"subject":"acme"}' --mocks tests/mocks.ts
-mutiro agent dev run . hook:beforeTool --call payments_send --args '{"payee":"acme","amount_usd":800}' --mocks tests/mocks.ts
+mutiro agent dev run . hook:beforeTool --call notes_add --args '{"subject":"acme","text":"  Prefers email  "}' --mocks tests/mocks.ts
 mutiro agent dev run . handler:shared/status:loadStatus --payload '{}' --mocks tests/mocks.ts
 ```
 
@@ -20,7 +20,7 @@ mutiro agent dev run . handler:shared/status:loadStatus --payload '{}' --mocks t
 | `.genie/tools/notes_add.ts` | a write tool: validation with `ValidationError`, the caller as author from `context`, the fact returned |
 | `.genie/tools/notes_list.ts` | a read tool: optional args, clamped limit, `count: 0` as an honest answer |
 | `.genie/tools/settings.json` | `extensions_only`: the model gets `notes_*`, never `supabase_sql` |
-| `.genie/hooks/spend-gate.ts` | `beforeTool`: a spending limit as a gate, a gate-only argument stripped, the refusal teaching the model the next step |
+| `.genie/hooks/note-length.ts` | `beforeTool`: trims outer whitespace and refuses notes over 280 characters without silently truncating facts |
 | `.genie/hooks/triage.ts` | `onMessage`: fixed reply to a health check, skip of own copies, a page action answered without a turn, a deliberate `Handoff` |
 | `.genie/hooks/redact.ts` | `beforeReply`: tokens and card numbers masked whatever a tool returned |
 | `.genie/hooks/settings.json` | per-hook switches |
@@ -34,10 +34,9 @@ mutiro agent dev run . handler:shared/status:loadStatus --payload '{}' --mocks t
 Two things the examples teach that the reference prose cannot:
 
 - **Mocks are the whole tool surface of a run.** A hook that calls one of
-  your own extensions (`notes_list` in the gate) needs that extension
-  mocked too; the harness does not route through to the real tool. The
-  first `dev run` of the gate failed with "Object has no member
-  'notes_list'" until `tests/mocks.ts` exported one.
+  your own extensions (`notes_list` in the triage hook) needs that extension
+  mocked too; the harness does not route through to the real tool.
+  `tests/mocks.ts` exports it for that reason.
 - **Regexes in a `beforeReply` are tested like code.** The first card
   pattern swallowed the trailing space; the test caught it, a probe never
   would have.

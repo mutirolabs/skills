@@ -119,8 +119,8 @@ silence while looking authoritative.
 
 Return measured facts, not summaries: include what was
 not found or skipped. Refuse with `ValidationError` and a message that
-tells the model what to do instead ("ask for the owner's approval, then
-retry with approved_by_owner: true"). Keep each tool a single verb with a stable
+tells the model what to do instead ("this note exceeds 280 characters;
+condense it without dropping facts"). Keep each tool a single verb with a stable
 shape; the model composes them. Write the fact (an event row, a log line)
 in the same tool that changes state, so the trail cannot drift from the
 change.
@@ -135,13 +135,16 @@ import { ValidationError } from "mutiro";
 
 // Before the model's tool call runs. Return { args } to rewrite the
 // arguments, nothing to allow as-is, or throw ValidationError to refuse.
-export const beforeTool: BeforeTool = ({ name, args, tools }) => {
-  if (name !== "payments_send") return;
-  if (Number(args.amount_usd) > 500 && args.approved_by_owner !== true) {
-    throw new ValidationError("Payments above 500 USD need the owner's approval first. Ask, then retry with approved_by_owner: true.");
+export const beforeTool: BeforeTool = ({ name, args }) => {
+  if (name !== "notes_add") return;
+  if (typeof args.text !== "string" || !args.text.trim()) {
+    throw new ValidationError("text must be a non-empty string.");
   }
-  const { approved_by_owner, ...rest } = args;   // the gate-only flag never reaches the real tool
-  return { args: rest };
+  const text = args.text.trim();
+  if (Array.from(text).length > 280) {
+    throw new ValidationError("Notes must be at most 280 characters. Condense the note without dropping facts, or split distinct facts into separate notes.");
+  }
+  return { args: { ...args, text } };
 };
 
 // When a message arrives, before the model sees it. Return { skip } to drop it,
@@ -172,10 +175,10 @@ A rule that gates one tool is a `beforeTool` hook, not a dependency
 between two tool packages: the broker client importing the registry
 library made the connector unusable without the desk.
 
-A hook is where a rule becomes enforcement. "Never pay above the limit unapproved"
-as an instruction is a hope; as a `beforeTool` gate it is a fact, and the
-model learns the rule from the refusal message. Put invariants that must
-hold on every call here, and leave judgement to the model.
+A hook is where a rule becomes enforcement. The note-length example
+refuses oversized notes on every guarded call and trims outer whitespace
+on accepted calls. The refusal tells the model how to retry; the hook
+never silently truncates the user's facts.
 
 ### Judgment in code: `tools.decide`
 
@@ -217,16 +220,21 @@ One API; without it, the agent's own Gemini model answers (a Gemini
 provider is required for this fallback). That choice belongs to the
 owner's runtime setup, never the hook.
 
-The two kinds of answer do not mean the same thing by a number. The
-calibrated backend, System One's Jev, returns probabilities and includes
-`confidence`; the chat-model backend returns its likelihood of yes and
-omits it. Threshold a `noul` at 0.5 unless `confidence` is present; a rule
-like "escalate above 0.8" means one thing calibrated and another on a model.
+The two kinds of answer do not mean the same thing by a number. System
+One's Jev returns calibrated probabilities; a chat-model backend returns
+its own likelihood estimate. `confidence` is optional answer metadata:
+a calibrated `noul` can omit it, so its absence does not identify the
+chat-model backend. The `systemone:` backend prefix identifies the API
+path, which may go through Mutiro's service; it is not proof of calibration
+either.
 
-```ts
-const calibrated = (a: { confidence?: number }) => a.confidence != null;
-const yes = (a: { noul: number; confidence?: number }, fine: number) => a.noul > (calibrated(a) ? fine : 0.5);
-```
+Choose thresholds for the configured backend and verify them with evals.
+Use 0.5 as a simple yes/no cutoff; treating 0.8 as an 80% probability
+requires a verified calibrated backend. The current `tools.decide`
+response has no explicit calibration flag. If a rule depends on calibrated
+probabilities, establish that guarantee from the runtime/platform
+configuration and hand off when it cannot be established; do not infer
+it from optional fields or silently substitute a different threshold.
 
 Two shapes that recur. Triage before the turn, handing the model a fact:
 
@@ -317,7 +325,7 @@ it writes pages; read it for the page side.
 mutiro agent dev check ./<dir>     # load everything as the agent will; tsc --noEmit if tsconfig + tsc exist
 mutiro agent dev test ./<dir>      # run tests/**/*.test.ts; --only <text>
 mutiro agent dev run ./<dir> tool:notes_list --args '{"subject":"acme"}' --mocks tests/mocks.ts
-mutiro agent dev run ./<dir> hook:beforeTool --call payments_send --args '{"payee":"acme","amount_usd":800}' --mocks tests/mocks.ts
+mutiro agent dev run ./<dir> hook:beforeTool --call notes_add --args '{"subject":"acme","text":"  Prefers email  "}' --mocks tests/mocks.ts
 mutiro agent dev run ./<dir> handler:shared/status:loadStatus --payload '{}' --mocks tests/mocks.ts
 mutiro agent dev types ./<dir> --agent <agent>   # mutiro.d.ts + tsconfig.json for the editor and tsc
 ```

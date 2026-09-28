@@ -95,8 +95,9 @@ goes in memory; it goes in the AGENTS.md files.
 ## Where growing data lives
 
 `shared/` is deployable config: it changes by commit and push, and the
-agent cannot write it. Anything the agent learns mid-conversation
-(customers, contacts, policies, logs) needs a runtime-writable store: a
+agent can also edit its content in conversations with owner standing.
+It is read-only in ordinary user conversations. Keep growing operational
+data (customers, contacts, policies, logs) in a runtime-writable store: a
 tool extension over a database, or sheets. Define the ontology (tables,
 write rules) in guidance and give the agent verbs, not files. Operational
 data never rides in the syncable set, or a config push clobbers the live
@@ -117,8 +118,10 @@ references, and pages as complete HTML documents.
 ## The conversation workspace
 
 What the agent makes is not what you push. Pages, notes, downloads,
-state files the agent keeps: they live in the workspace and `files pull`
-never shows them. Read them with your own standing, without waking the
+state files the agent keeps: outside the config-plane paths, they live in
+the workspace and `files pull` never shows them. Edits under `shared/`
+remain part of the config plane and do come back through `files pull`.
+Read workspace output with your own standing, without waking the
 agent:
 
 ```bash
@@ -133,8 +136,10 @@ Sections: `shared` is the owner-writable content the users also see;
 `downloads` is where a user's uploads and fetched attachments land.
 Behavior files (the config plane minus `shared/`) are read-only in the
 workspace; tools and hooks source is read-only even to the agent itself.
-Pages under `shared/` are the exception: the agent edits them in
-conversation, and you bring those edits back with `files pull`.
+Pages under `shared/` are the exception: the agent can edit them in
+conversations with owner standing, and you bring those edits back with
+`files pull`. Ordinary user conversations can read shared content but
+cannot write it; tools and hooks source remains read-only to the agent.
 
 ## Sync, in one picture
 
@@ -178,8 +183,7 @@ README so the repo tells the whole story:
   conversation, and **recall** over conversation history (`recall`,
   `recall_get`; ambient recall injects snippets before a turn).
 - **Reactions reach the agent** as a threaded message
-  (`[reacted ✅ to #msgid]`), so an approval routine can accept a reaction
-  on its own ask as the answer.
+  (`[reacted ✅ to #msgid]`), preserving which message the reaction refers to.
 - **Scheduled routines** are schedules from the owner to the agent:
   `mutiro user schedule create --recipient <agent> --instruction "..." --cron "0 11 * * *"`
   (also `--interval-every`, `--once-at`, `--catch-up`). The fired message

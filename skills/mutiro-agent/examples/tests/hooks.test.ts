@@ -2,30 +2,34 @@ import { describe, it, expect, hook } from "mutiro/test";
 
 const notes = (count: number) => ({ notes_list: () => ({ count, notes: count ? [{ text: "Pays late" }] : [] }) });
 
-describe("spend-gate (beforeTool)", () => {
+describe("note-length (beforeTool)", () => {
   it("ignores every other tool", () => {
-    expect(hook("beforeTool").run({ amount_usd: 9999 }, { call: "notes_add" }).kind).toBe("allowed");
+    expect(hook("beforeTool").run({ text: "x".repeat(281) }, { call: "notes_list" }).kind).toBe("allowed");
   });
-  it("lets a small payment through and strips the approval flag", () => {
-    const r = hook("beforeTool").run({ payee: "acme", amount_usd: 120, approved_by_owner: false }, { call: "payments_send" });
+  it("trims a note and preserves its subject", () => {
+    const r = hook("beforeTool").run({ subject: "acme", text: "  Prefers email  " }, { call: "notes_add" });
     expect(r.kind).toBe("allowed");
-    expect(r.args).toEqual({ payee: "acme", amount_usd: 120 });
+    expect(r.args).toEqual({ subject: "acme", text: "Prefers email" });
   });
-  it("refuses a large unapproved payment and quotes the payee's latest note", () => {
-    const r = hook("beforeTool").run({ payee: "acme", amount_usd: 800 }, { call: "payments_send", tools: notes(1) });
+  it("refuses an oversized note rather than truncating it", () => {
+    const r = hook("beforeTool").run({ subject: "acme", text: "x".repeat(281) }, { call: "notes_add" });
     expect(r.kind).toBe("refused");
-    expect(r.refusal).toContain("need the owner's approval");
-    expect(r.refusal).toContain("Pays late");
-    expect(r.calls.map((c) => c.tool)).toEqual(["notes_list"]);
+    expect(r.refusal).toContain("at most 280 characters");
   });
-  it("lets an approved large payment through", () => {
-    const r = hook("beforeTool").run({ payee: "acme", amount_usd: 800, approved_by_owner: true }, { call: "payments_send", tools: notes(0) });
+  it("accepts the exact limit after trimming", () => {
+    const text = "x".repeat(280);
+    const r = hook("beforeTool").run({ subject: "acme", text: " " + text + " " }, { call: "notes_add" });
     expect(r.kind).toBe("allowed");
-    expect(r.args).toEqual({ payee: "acme", amount_usd: 800 });
-    expect(r.calls).toHaveLength(0);
+    expect(r.args?.text).toBe(text);
   });
-  it("refuses a malformed amount", () => {
-    expect(hook("beforeTool").run({ amount_usd: "lots" }, { call: "payments_send" }).refusal).toContain("positive number");
+  it("counts Unicode code points rather than UTF-16 code units", () => {
+    expect(hook("beforeTool").run({ text: "😀".repeat(280) }, { call: "notes_add" }).kind).toBe("allowed");
+    expect(hook("beforeTool").run({ text: "😀".repeat(281) }, { call: "notes_add" }).kind).toBe("refused");
+  });
+  it("refuses missing, non-string and blank text", () => {
+    for (const text of [undefined, 123, "   "]) {
+      expect(hook("beforeTool").run({ text }, { call: "notes_add" }).refusal).toContain("non-empty string");
+    }
   });
 });
 

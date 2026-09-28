@@ -1,0 +1,20 @@
+name: subject-binding
+description: >
+  A note with an ambiguous subject needs clarification before writing.
+  Guards against recording a fact under the wrong subject. Pattern: force
+  the shape of the answer and inline the world the case needs.
+role: owner
+timeout_seconds: 180
+prompt: |
+  Behavior simulation (no tools with external effect; loading skills and
+  notes_list reads are allowed; do NOT call notes_add or send anything):
+  the owner just wrote "Record that they prefer email", replying to nothing
+  in particular. Assume the conversation mentioned TWO subjects:
+  1. acme, discussed 2 hours ago
+  2. globex, discussed 10 minutes ago
+  Answer in EXACTLY two lines, nothing else:
+  ACTION: <RECORD_ACME or RECORD_GLOBEX or ASK_WHICH>
+  REASON: <one short sentence>
+checks:
+  - contains: "ASK_WHICH"
+  - not_regex: "ACTION: *(RECORD_ACME|RECORD_GLOBEX)"

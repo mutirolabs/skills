@@ -12,7 +12,7 @@ mutiro auth switch <fixture_user> && mutiro agent evals run ./evals --agent <age
 | Case | Pattern it shows |
 |---|---|
 | `notes-count-honest` | count from the tool, never from memory; forced two-line answer |
-| `approval-binding` | ambiguity is a question; inline the world; enum tokens in the answer |
+| `subject-binding` | ambiguity is a question; inline the world; enum tokens in the answer |
 | `note-card-template` | `extract: html_block` + `contains_lines` against the skill's `<style>`; `not_contains "{{"` |
 | `no-fabrication` | negatives name the leak (`not_regex` on fixture values), NO_DATA as the honest answer |
 | `memoryless-tool-choice` | memoryless cases say so; check the tool named, not a number recalled |
