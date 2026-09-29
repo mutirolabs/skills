@@ -45,9 +45,10 @@ Bundled skills (`workspace-html`, `mutiro-guide`) are overridden by a copy
 in `.genie/skills/<name>/` and hidden with `disabled:` in
 `.genie/skills/settings.yaml`, the only key that file accepts.
 
-Published skills (`supabase-data`, `supabase-schema`, `bkper`,
-`bkper-review`, `gmail`, `mail`) come from github.com/mutirolabs/skills
-releases and switch on when their tools are present. A local skill with
+Published skills come from github.com/mutirolabs/skills releases (the
+repo is the current list; it grows with the connectors) and switch on
+when their tools are present, e.g. a Supabase skill once the Supabase SQL
+tools are there. A local skill with
 the same name replaces the content but keeps the platform's tool
 requirements. Self-hosted, `MUTIRO_SKILLS_RELEASE` picks the release:
 `latest` (default), `off`, or a `vX.Y.Z` tag.

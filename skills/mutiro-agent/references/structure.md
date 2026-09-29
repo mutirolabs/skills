@@ -243,7 +243,7 @@ Things an agent has that are not files in this directory, managed in the
 control plane (the apps or `mutiro agents ...`), documented in the repo's
 README so the repo tells the whole story:
 
-- **Tools on/off and owner-only**, connectors (Gmail, email, Supabase), secrets, webhooks, the allowlist.
+- **Tools on/off and owner-only**, connectors (`mutiro agents connections providers` lists them), secrets, webhooks, the allowlist.
 - **Memory**: `MEMORY.md` (per workspace: the owner root and each
   `users/<x>/`) and working memory per conversation are injected every
   turn. `recall` and `recall_get` search this conversation's history on

@@ -197,8 +197,9 @@ controls on a hosted agent:
 - secrets, via `mutiro agents secrets set <agent> NAME value`; they appear
   to the agent and its MCP servers as environment variables named exactly
   as set;
-- connectors (Supabase, Gmail, email, Bkper), via the apps or
-  `mutiro agents connections` (`connections.md`);
+- connectors, bound via the apps or `mutiro agents connections`; the set
+  grows, so `mutiro agents connections providers` is the current list
+  (`connections.md`);
 - published skills, which switch on with their tools (`instructions.md`).
 
 Control-plane facts that look like bugs: a developer grant takes effect
