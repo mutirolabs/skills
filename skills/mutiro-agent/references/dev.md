@@ -42,7 +42,8 @@ calls.
 (`.gitignore`) and commit `tsconfig.json`. Without `--agent` the `Tools`
 interface types your own extensions from their `inputSchema` and leaves
 other names open. With `--agent <username>` it fetches the hosted agent's
-enabled tools with their schemas and closes the interface: a tool the
+enabled tools with their schemas and closes the interface, which makes it
+the reference for what the agent can call: a tool the
 agent does not have is a type error, and each built-in tool's arguments
 are typed. Regenerate after adding a tool or after the agent's surface
 changes; the platform does not do it for you, and a hosted agent reports

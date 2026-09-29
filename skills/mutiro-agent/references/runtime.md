@@ -81,22 +81,11 @@ do this with `supabase_sql`: the model sees `notes_*`, never raw SQL). On a
 local burner the yaml's tool list plays the image's part; it replaces the
 defaults rather than adding to them.
 
-The built-in tools a hosted agent carries, by group (`(o)` = owner-only
-by default):
-
-| Group | Tools |
-|---|---|
-| Files | `listFiles`, `findFiles`, `readFile`, `writeFile`, `appendFile`, `editFile`, `copyFile`, `moveFile`, `removeFile`, `makeDirectory`, `searchInFiles`, `viewImage`, `viewDocument` |
-| Orchestration | `Skill`; `Task` (o); `install_skill` (o) |
-| Messaging and cards | `send_message`, `send_voice_message`, `send_image_message`, `edit_image_message`, `send_file_message`, `show_workspace_file`, `send_card`, `update_card`, `respond_to_action`, `react_to_message`, `forward_message` |
-| Conversations | `conversations_list`, `conversation_read`, `conversation_message_get`, `conversation_search`, `conversation_search_result_get` (all o); `get_audio_transcript` |
-| Web | `web_search`, `web_fetch` |
-| Decisions | `decide` |
-| Memory and recall | `memory_get`, `memory_write`, `recall`, `recall_get` |
-| Scheduling | `schedule_message_create`, `schedule_message_list`, `schedule_message_cancel` (all o) |
-| Sheets | `sheet_create`, `sheet_list`, `sheet_read`, `sheet_update`, `sheet_export`, `sheet_import`, `sheet_copy`, `sheet_delete`, `share_sheet` |
-| Connectors | `supabase_sql`, `supabase_invoke`, `supabase_admin_sql` (o); `gmail_search`, `gmail_read`, `gmail_draft`, `gmail_send` (o); `email_*`; `bkper_*` (`bkper_post`, `bkper_check`, `bkper_trash` o) (`connections.md`) |
-| Endpoints | `endpoint_invoke`, extensions-only by the platform (`connections.md`) |
+The tool set grows with each platform build, so this file does not list
+it. Two sources are always current: `mutiro agent dev types --agent`
+writes `mutiro.d.ts` with every tool the agent holds and its typed
+arguments, and `mutiro agents tools list` shows each one's live state
+(on or off, owner-only, needs a connection).
 
 There are no git, shell or browser tools on a hosted agent: the git tools
 ship only in the self-hosted default, and a shell or a browser is
@@ -106,8 +95,8 @@ Read the live surface before tuning around a tool; the model will name
 tools it does not hold:
 
 ```bash
-mutiro agents tools list <agent>                    # enabled/disabled, as the agent has them
-mutiro agent dev types ./<dir> --agent <agent>      # the same surface as TypeScript types
+mutiro agents tools list <agent>                    # live state: on/off, owner-only, needs connection
+mutiro agent dev types ./<dir> --agent <agent>      # mutiro.d.ts: every tool and its typed arguments
 ```
 
 `tools list` marks what the checkbox does not say: `(owner-only)`,

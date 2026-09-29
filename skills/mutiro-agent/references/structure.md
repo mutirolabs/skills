@@ -65,11 +65,10 @@ the agent root with every `users/<x>/` beneath it; a user's conversation
 is sandboxed to `users/<x>/` by path checks. The same holds for tools:
 `owner_only` tools are absent in a user's conversation, and a tool
 extension or handler triggered by a user runs with that user's tools.
-Owner-only by default: `install_skill`, `Task`, the conversation tools,
-`schedule_message_*`, `supabase_admin_sql`, `gmail_send`, and bkper
-post/check/trash. `send_message` is open to users. Hosted agents have no
-`bash`, git or code execution. `mutiro agents tools list <agent>` is the
-truth for a given agent; the tool map is in `runtime.md`. A **service
+Which tools are owner-only is per agent and shown by
+`mutiro agents tools list <agent>`; tools that reach across users (other
+conversations, shell, code) stay owner-only, enforced by the platform.
+Hosted agents have no shell, git or code execution (`runtime.md`). A **service
 member** is a platform member that delivers events to the agent instead of a
 person: an email connector's inbox, an inbound webhook's sender. It is a user
 like any other, with its own conversation and `users/<member>/AGENTS.md`,
@@ -289,8 +288,8 @@ README so the repo tells the whole story:
     and `schedule list <agent> --include-inactive` for paused, cancelled
     and completed ones.
 - **Sheets** (on by default when hosted): named typed tables the agent
-  keeps under `.mutiro/sheets/`, nine `sheet_*` tools including
-  `share_sheet`, exportable to xlsx/csv; `sheet_read` also reads `.xlsx`
+  keeps under `.mutiro/sheets/`, the `sheet_*` tools (including
+  `share_sheet`), exportable to xlsx/csv; `sheet_read` also reads `.xlsx`
   and `.csv` files in the workspace.
 - **Putting things in front of users**: `show_workspace_file` sends a
   clickable file card (anchor, line range, `auto_open`); a plain Markdown
