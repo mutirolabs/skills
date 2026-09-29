@@ -19,7 +19,8 @@ notes/                                 one agent: @notes_desk_x1w1
 │   ├── tools/<name>.ts                tool extensions (extensions.md); lib/ for shared code
 │   ├── tools/settings.json            { "extensions_only": [...] }
 │   ├── hooks/*.ts                     onMessage / beforeTool / beforeReply
-│   └── hooks/settings.json            per-hook enabled flags
+│   ├── hooks/settings.json            per-hook enabled flags
+│   └── bookmarks.json                 files pinned to the apps' quick menu (Bookmarks, below)
 ├── AGENTS.md                          owner-workspace context (the agent root is the owner's workspace)
 ├── users/<username>/AGENTS.md         per-user behavior; that user's conversations only
 ├── shared/                            owner-curated content for the agent and its users; pages live here
@@ -34,8 +35,8 @@ notes/                                 one agent: @notes_desk_x1w1
 
 `mutiro agent files` transfers exactly these paths and nothing else:
 `.agent_instructions.md`; `AGENTS.md`, `GENIE.md`, `CLAUDE.md` at the
-root; `.genie/AGENTS.md`; `.genie/skills/**`; `.genie/hooks/**`;
-`.genie/tools/**`; `users/*/AGENTS.md` (and GENIE/CLAUDE, only at a user
+root; `.genie/AGENTS.md`; `.genie/bookmarks.json`; `.genie/skills/**`;
+`.genie/hooks/**`; `.genie/tools/**`; `users/*/AGENTS.md` (and GENIE/CLAUDE, only at a user
 root); `shared/**`. Everything else in the directory stays local:
 `evals/`, `tests/`, `tsconfig.json`, `.prettierrc`, `mutiro.d.ts`. That is
 deliberate: the agent must never see its own tests.
@@ -49,23 +50,42 @@ the owner, `users/<x>/AGENTS.md` for user `x`), then skill descriptions,
 then memory. A skill body enters only when the model invokes the skill.
 Where a rule goes follows from this (`instructions.md`).
 
+- **One workspace context file loads**, by precedence `GENIE.md` >
+  `CLAUDE.md` > `AGENTS.md`. A stray `GENIE.md` silently shadows the
+  `AGENTS.md` beside it.
+- **Reading a file in a directory adds that directory's context file**
+  for the rest of the engine's life: once the agent reads anything under
+  `shared/<x>/`, `shared/<x>/AGENTS.md` is direction, not content.
+- **Root `AGENTS.md` applies to the owner and developers only**; users get
+  `users/<x>/AGENTS.md` instead.
+
 ### Owner and users
 
 An agent has one owner and any number of users (the allowlist). **The
 workspace resolves per conversation**: the owner's conversation runs at
 the agent root with every `users/<x>/` beneath it; a user's conversation
 is sandboxed to `users/<x>/` by path checks. The same holds for tools:
-`owner_only` tools and owner-only built-ins (send to anyone, scheduling,
-`bash`) are absent in a user's conversation, and a tool extension or
-handler triggered by a user runs with that user's tools. A **service
+`owner_only` tools are absent in a user's conversation, and a tool
+extension or handler triggered by a user runs with that user's tools.
+Owner-only by default: `install_skill`, `Task`, the conversation tools,
+`schedule_message_*`, `supabase_admin_sql`, `gmail_send`, and bkper
+post/check/trash. `send_message` is open to users. Hosted agents have no
+`bash`, git or code execution. `mutiro agents tools list <agent>` is the
+truth for a given agent; the tool map is in `runtime.md`. A **service
 member** is a platform member that delivers events to the agent instead of a
 person: an email connector's inbox, an inbound webhook's sender. It is a user
 like any other, with its own conversation and `users/<member>/AGENTS.md`,
 and the turns it triggers run with a user's tools.
 
 Developers granted with `mutiro agents developers grant` hold owner
-standing for every command in this guide except writing into another
-user's conversation as the agent.
+standing in conversations and can run files push/pull and the dev loop,
+evals as themselves, view-as reads, secrets, webhooks, schedules, and
+start/stop. Owner-only:
+
+- sharing and the allowlist, the profile, deleting the agent;
+- connecting providers (OAuth), `agents move`, granting developers;
+- sending as the agent into another user's conversation, so
+  `--in-conversation-with` evals and `agent conversation clear`.
 
 ## The state plane (never in the repo)
 
@@ -92,6 +112,13 @@ Two special files the owner reaches only through the agent:
 user's next turn and deleted) and `MEMORY.md`. Hand-curated context never
 goes in memory; it goes in the AGENTS.md files.
 
+The owner and developers can read (not write) `MEMORY.md`, the AGENTS.md
+files and skills in the workspace section `agent`. The memory audit:
+
+```bash
+mutiro user workspace cat <agent> MEMORY.md --section agent [--root user:<name>]
+```
+
 ## Where growing data lives
 
 `shared/` is deployable config: it changes by commit and push, and the
@@ -111,9 +138,9 @@ error, no register); and ownership follows the conversation that created
 the store, so create shared state deliberately from the owner seat and
 guard visibility with an eval run as each member.
 
-`shared/` is also client-facing: anything pushed there is read by the
-customer's team. No platform admin names, no repo or test-suite
-references, and pages as complete HTML documents.
+`shared/` is also user-facing: anything pushed there is read by the
+agent's users. No internal names, no repo or test-suite references, and
+pages as complete HTML documents.
 
 ## The conversation workspace
 
@@ -125,21 +152,52 @@ Read workspace output with your own standing, without waking the
 agent:
 
 ```bash
-mutiro user workspace ls [-R] <agent> <path>        # sections: shared, other (agent's working dir), downloads
-mutiro user workspace cat <agent> <path>
-mutiro user workspace preview <agent> <page> --json # mint a page link (carries a token: keep it out of logs)
+mutiro user workspace sections <agent>                # roots and sections you can reach
+mutiro user workspace bookmarks <agent>               # the quick menu, as you see it
+mutiro user workspace ls [-R] <agent> <path>          # --section downloads|shared|agent|other (default other)
+mutiro user workspace cat <agent> <path> [-o file]
+mutiro user workspace pull <agent> <path> -o <dir> [--zip]
+mutiro user workspace write <agent> <path> <file> --section shared   # or downloads; other refuses writes
+mutiro user workspace preview <agent> <page> --json   # mint a page link (carries a token: keep it out of logs)
 mutiro user workspace ls <agent> <path> --root user:<name>   # a user's private root, as owner
 ```
 
 Sections: `shared` is the owner-writable content the users also see;
 `other` is the agent's own working directory (the root, for the owner);
-`downloads` is where a user's uploads and fetched attachments land.
-Behavior files (the config plane minus `shared/`) are read-only in the
-workspace; tools and hooks source is read-only even to the agent itself.
-Pages under `shared/` are the exception: the agent can edit them in
-conversations with owner standing, and you bring those edits back with
-`files pull`. Ordinary user conversations can read shared content but
-cannot write it; tools and hooks source remains read-only to the agent.
+`agent` shows its memory, context files and skills, read-only;
+`downloads` is where a user's uploads and fetched attachments land (the
+apps label it "Uploads").
+
+In the owner's conversation the model can write the whole config plane
+except `.genie/tools/**`, `.genie/hooks/**`, `.genie/hooks.state.json` and
+`.genie/bookmarks.json`: it can edit the soul, both AGENTS.md files,
+skills and `shared/`. Those self-edits are what `files pull` brings back.
+Ordinary user conversations can read shared content but cannot write it.
+
+### Bookmarks
+
+`.genie/bookmarks.json` pins files to a quick menu: the chat-header menu
+on desktop and web, an app-bar sheet on mobile. It is config plane,
+synced by `files push`, and read-only to the model.
+
+```json
+{"bookmarks": [{"label": "Dashboard", "path": "shared/dashboard/index.html"}]}
+```
+
+- `path` is relative to the agent directory; at most 50 entries; an
+  entry without a label or with an unclean path is dropped, not fatal.
+- A person sees a bookmark only if they can read its file: `shared/` →
+  everyone; the agent root → owner and developers; `users/<x>/` → that
+  user only (owner and developers can still open the file, but it is not
+  in their menu).
+- A bookmark whose file does not exist yet still shows, and works once
+  the agent writes the file.
+- A push shows in `workspace bookmarks` within about a minute; the apps
+  remember the menu for up to half an hour, or until they restart.
+- `mutiro user workspace bookmarks <agent> --root user:<name>` shows what
+  that user sees.
+
+Good use: pin a dashboard page the agent keeps under `shared/`.
 
 ## Sync, in one picture
 
@@ -158,30 +216,41 @@ next push then sees them as new files.
 edited on the agent since the last deploy (`--force` overrides, `--prune`
 deletes what the last deploy recorded and the repo no longer has).
 Commit before pushing: the deploy is labeled with the repo commit, and a
-dirty tree is labeled dirty. Tools, hooks, a new skill and a changed skill
-description are read at process start, so a push of those is live with
-`--restart` or at the next cold start; the manual and skill bodies reload
-per conversation or invocation. The full
-routine and its traps are in `tuning.md`.
+dirty tree is labeled dirty. The full routine and its traps are in
+`tuning.md`.
+
+When a pushed change takes effect:
+
+- hooks and `hooks/settings.json`: the next call;
+- page handlers: the next request;
+- tool extensions, a new skill or a changed skill description: a new
+  process (`files push --restart`, or the next wake);
+- the soul `.agent_instructions.md`: cached per process, so restart or
+  the next cold start;
+- the manual `.genie/AGENTS.md` and the root and `users/<x>/` AGENTS.md:
+  cached per conversation engine, so after `/clear` in that conversation
+  or a restart;
+- skill bodies: the next invocation.
 
 ## Where a thing belongs
 
 Place a thing by who would want it unchanged: the platform, if a second
-unrelated agent would; the image, if a second client in the same trade
-would; the client's repo, if only this agent would. A client's data
-project and its migrations live in the client repo, and nothing shipped
-in an image touches the client's database.
+unrelated agent would (ask Mutiro); the agent's repo, if only this agent
+would. The agent's data project and its migrations live in the agent's
+repo.
 
 ## Beyond the files
 
 Things an agent has that are not files in this directory, managed in the
-control plane (desktop or `mutiro agents ...`), documented in the repo's
+control plane (the apps or `mutiro agents ...`), documented in the repo's
 README so the repo tells the whole story:
 
-- **Tools on/off and owner-only**, connectors (Gmail, email, Supabase), secrets, the allowlist, the model.
-- **Memory**: `MEMORY.md` per workspace, working memory per
-  conversation, and **recall** over conversation history (`recall`,
-  `recall_get`; ambient recall injects snippets before a turn).
+- **Tools on/off and owner-only**, connectors (Gmail, email, Supabase), secrets, webhooks, the allowlist.
+- **Memory**: `MEMORY.md` (per workspace: the owner root and each
+  `users/<x>/`) and working memory per conversation are injected every
+  turn. `recall` and `recall_get` search this conversation's history on
+  demand, including before a `/clear`. A `/clear` cuts chat history only;
+  memory persists.
 - **Reactions reach the agent** as a threaded message
   (`[reacted ✅ to #msgid]`), preserving which message the reaction refers to.
 - **Scheduled routines** are schedules from the owner to the agent:
@@ -191,9 +260,11 @@ README so the repo tells the whole story:
     --cron "0 8 * * 1-5" --timezone America/Sao_Paulo
   ```
 
-  (also `--interval-every`, `--once-at`, `--catch-up`; `--user <name>`
-  lands it in the agent's conversation with that user instead of the
-  owner's). The fired message is a turn, so the agent reads its manual and
+  (also `--interval-every`, `--once-at`, `--catch-up`). It lands in the
+  owner's conversation with the agent even when a developer creates it;
+  `--user <name>` lands it in the agent's conversation with that user
+  instead, still sent as the owner, and that conversation must already
+  exist. The fired message is a turn, so the agent reads its manual and
   skills. The agent's own `schedule_message_*` tools send messages out;
   they do not schedule its own turns. Keep the instruction a dumb trigger
   with `/clear` as its first line (it clears context before the turn) and
@@ -203,10 +274,10 @@ README so the repo tells the whole story:
   set it acts on to be a query: anything old runs carried in conversation
   history needs a tool or a status.
   - **Set `--timezone`.** Without it the cron runs in UTC, so "0 8" fires
-    at 08:00 UTC, not at the desk's 8am.
+    at 08:00 UTC, not at your 8am.
   - **Key calendar work on "the first run since", not on a date.** A
     weekday-only cron never fires on a 1st that falls on a weekend, so
-    "on the 1st, report last month's lapsed rules" silently skips; "the
+    "on the 1st, report last month's totals" silently skips; "the
     first run after the month turned", from a query, does not.
   - **`/clear` needs a real line break**, not the two characters `\n`:
     `$'/clear\n...'` in bash, `` "/clear`n..." `` in PowerShell.
@@ -214,8 +285,23 @@ README so the repo tells the whole story:
     the schedule and its next run; `mutiro agents schedule run-now <id>`
     runs it immediately, so the routine is proven before the first
     unattended morning.
-- **Sheets** (opt-in): named typed tables the agent keeps under
-  `.mutiro/sheets/`, shareable to users, exportable to xlsx/csv.
+  - **A successful run means delivered, not done.** Check the outcome
+    (the reply, the file, the row), not the run status.
+  - Manage with `schedule pause|resume|cancel <id>`, `schedule executions`,
+    and `schedule list <agent> --include-inactive` for paused, cancelled
+    and completed ones.
+- **Sheets** (on by default when hosted): named typed tables the agent
+  keeps under `.mutiro/sheets/`, nine `sheet_*` tools including
+  `share_sheet`, exportable to xlsx/csv; `sheet_read` also reads `.xlsx`
+  and `.csv` files in the workspace.
+- **Putting things in front of users**: `show_workspace_file` sends a
+  clickable file card (anchor, line range, `auto_open`); a plain Markdown
+  link does not open the preview. `send_card`/`update_card` send
+  interactive cards; a click arrives as
+  `[Card interaction: card=… action=… data=<json>]`, the text hooks and
+  evals see. In desktop and web with the workspace sidebar open, each
+  message carries `The user is currently viewing "<path>" in <scope>.`
+  plus any selected text quoted with `> `; mobile does not send it.
 - **Skills discovery order**: `.claude/skills/` in the agent dir,
   `.genie/skills/`, `$HOME/.genie/skills/`, published skills, the Mutiro
   bundle (`workspace-html`, `mutiro-guide`). Copy a bundled skill into

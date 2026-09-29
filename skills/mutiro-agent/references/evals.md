@@ -20,8 +20,8 @@ do not hold, the files are gone. Consequences:
   **fixture user** — a test member sharing the agent, holding no
   developer grant, with a copy of real work in its own `users/<fixture>/`
   workspace. One identity, one role: a fixture that also carries a grant
-  turns every user-role eval into a privileged run (weeks of green once
-  certified nothing about visibility). The sandbox then bounds
+  turns every user-role eval into a privileged run whose green certifies
+  nothing about visibility. The sandbox then bounds
   the damage by construction. Owner-role cases reach every user's files.
 - To simulate a user from the owner seat, prefix the prompt: "this
   message comes from <user>; work only in users/<user>/". That exercises
@@ -29,14 +29,21 @@ do not hold, the files are gone. Consequences:
   real user login.
 - The runner clears context before every case (`--clear-between`, on by
   default), so each case measures the config, not the suite's history.
-  Cases still land in a real conversation and enter memory; opt out with
-  `--clear-between=false` only for a suite whose cases build on each other.
+  A clear cuts chat history only: `MEMORY.md` is still injected and
+  working memory persists, so a case that makes the agent remember
+  something leaks into every later case. Audit memory (`mutiro user
+  workspace cat <agent> MEMORY.md --section agent`) before suspecting
+  cross-case bleed. Opt out with `--clear-between=false` only for a suite
+  whose cases build on each other.
+- The soul is cached per process: after pushing `.agent_instructions.md`,
+  `files push --restart` before running evals, or they judge the old soul.
 - Cases are self-contained; number checks tolerate locale
   (`regex: "680[.,]10"`); "don't use tools" must exempt the Skill tool.
 
 **Three ways to run a user-role case.** Switch the CLI to a fixture
 user's login and pass `--role user`: the real sandbox, real privacy.
-Or stay logged in as owner and pass `--in-conversation-with <user>`:
+Or stay logged in as the owner (only the owner can send into another
+member's conversation) and pass `--in-conversation-with <user>`:
 the probe lands in the agent's conversation with that user as an owner
 interjection, but the engine answering is bound to that conversation's
 own self — its workspace, tools, and injected context. This is how you
@@ -79,8 +86,17 @@ checks:
 
 Checks are `contains`, `not_contains`, `regex`, `not_regex`, and
 `contains_lines` (`file:` relative to the case, `between: [start, end]`
-markers; every line of that region must appear verbatim). Exit code
-reflects failures, so a suite runs in CI unchanged.
+markers; every line of that region must appear verbatim). `extract:
+html_block` runs a case's reply checks on the first `html` code fence
+instead of the whole reply (a reply without one fails); it is the only
+extraction. A failing run exits non-zero with `N/M case(s) failed`, so a
+suite runs in CI unchanged.
+
+Checks see three things: the reply text, the action's result JSON, and
+file bytes. There are no model judges and no "tool was called" check;
+proving a tool ran is the activity digest's or the traces' job, not an
+eval's. For an action, the runner prints `answered by handler <name>` or
+`answered by turn`: that line is the proof of whether a page handler ran.
 
 A case is not limited to the reply. Three optional blocks make it assert
 on the workspace, each through the same call the CLI command makes:
@@ -110,9 +126,16 @@ The runner writes the seed with `workspace write`, sends the action with
 check vocabulary above on the bytes. Seeds land in `shared/` for an
 owner and `downloads/` for a user, the sections each may write, because
 `other` is the agent's own and refuses app writes; a case that reads a
-file the agent made names it under `other`, the default. A case with
-only `files:` is a read: it wakes nothing and checks what an earlier
+file the agent made names it under `other`, the default. Each `seed`,
+`action` and `files` entry takes `section:` and `root:` (for example
+`root: user:<name>`) to point elsewhere; an action's source defaults to
+`other` too, so a page under `shared/` needs `section: shared`. An action
+takes its own `timeout_seconds` (default: the case's, itself 180). A case
+with only `files:` is a read: it wakes nothing and checks what an earlier
 case left behind.
+
+The loader refuses a case with reply `checks:` but no prompt (put them
+under `action.checks` or `files`), and a `files` entry with no checks.
 
 Two rules follow from how these steps get their standing:
 
@@ -155,8 +178,8 @@ What makes a case hold, taken from the suite:
   user-role case that says "no tools, no file reads: quote the first
   sentence of section X, or answer exactly NO_MANUAL" catches the layer
   that was never injected. Owner-role probes mask this by silently
-  reading the file (one agent ran rule-less for days with owner evals
-  green).
+  reading the file, so an agent can run without its rules while every
+  owner eval stays green.
 - **Memoryless cases say so.** "Context is clear, you have no memory of
   yesterday's board" plus a check on the tool call the agent names is
   how a regression from `/clear` gets pinned.
@@ -164,20 +187,21 @@ What makes a case hold, taken from the suite:
   "(?i)(acme|globex)"` with the real register names beats "no customer
   data".
 - **Numbers tolerate locale** (`1[.,]?850`, `680[.,]10`); regexes are
-  `(?i)`; a Portuguese suite can force English enum tokens in the
+  `(?i)`; a suite in another language can force English enum tokens in the
   answer lines so checks stay ASCII.
 - **One behavior per case.** Two cases for a fast path (complete /
   incomplete input) beat one case with a branch in it.
 
 - **Checks pin invariants, never arithmetic layouts.** Assert the facts
-  that must hold (cheapest final price, margin applied, customer named)
+  that must hold (the right total, the rule applied, the subject named)
   rather than an exact table; legitimate layouts vary and the case flakes
   while the behavior is right.
-- **Every check must fail on an error reply.** A probe "passed" on the
-  text "no sheet named register-customers" because its check matched a
-  substring the error also carried. Add a `not_regex` for error shapes.
+- **Every check must fail on an error reply.** A check that matches a
+  name passes on "no sheet named <name>", because the error carries the
+  same substring. Add a `not_regex` for error shapes.
 - **An in-suite failure is a lead; isolation is the verdict.** Rerun with
-  `--only` before touching config. A case that flakes at half the runs in
+  `--only` before touching config, and check whether the *check* is wrong
+  before blaming the agent. A case that flakes at half the runs in
   isolation on format is watched, not fixed by churning the manual.
 - **A guard written after the capability shipped is not evidence.** Say
   so in its description; it protects against regressions but proves
@@ -190,13 +214,13 @@ What makes a case hold, taken from the suite:
   green while the real run skips the row; replay the recorded listing.
 - **Prompts in the operator's words.** Do not name the skill to load or
   the handler action: the choice is what is under test. A fully specified
-  instruction pins behavior the desk will never exercise.
+  instruction pins behavior real users will never exercise.
 - **Scope negatives to the artifact** (the table, the priced line), not
   the whole reply; a phrase the agent may legitimately use in an
   explanation makes the case flake one run in ten.
 - **A rerun in the same conversation measures memory, not config.** The
-  agent answered "already exists" about a page it had deleted twenty
-  minutes earlier. Clear, or use a fresh conversation.
+  agent can answer "already exists" about a page it has since deleted.
+  Clear, or use a fresh conversation.
 - **Flat files are the independent set; a subfolder is one ordered
   scenario**, run separately with `--clear-between=false`. The runner
   reads one directory and never descends.
@@ -205,8 +229,8 @@ What makes a case hold, taken from the suite:
   the skill, run the case, restore. If red cannot be demonstrated, say
   "red not demonstrated"; never invent a failure.
 - **Compose the real artifact.** A case checking a simulated answer line
-  stayed green while a mandated link never appeared in real
-  confirmations. For anything the agent renders (email HTML, tables) make
+  stays green while a mandated link never appears in the real output.
+  For anything the agent renders (email HTML, tables) make
   the case compose it and check the bytes.
 
 Run `--only <name>` while authoring; a new case earns its place by
@@ -214,16 +238,6 @@ failing on the old config and passing on the new one. These patterns
 are a start, not a canon: when a case catches something the list above
 could not have, add the pattern here in the same form, with the failure
 it prevents.
-
-**The runner waits for each reply and clears context between cases**
-(`--clear-between`, default true). Earlier builds did neither, and the
-habits from then still hold: rerun every failure solo from a cleared
-context before believing it, verify with timestamps that a judged reply
-postdates its prompt, and check whether the *check* is wrong before
-blaming the agent. Three of four batch failures were once cross-case
-bleed and the fourth a stale regex. For a suite whose cases build on each
-other, put it in its own subfolder and run it with
-`--clear-between=false`.
 
 **Replay real sessions.** A verbatim transcript of a user's session,
 replayed turn-by-turn against a fixture from a cleared context, is the
@@ -248,9 +262,9 @@ every turn.
 that should create or edit files, `ls -R` the folder and `cat` each file
 into a scratch dir, then diff or hash against what the prompt asked for.
 The failure this catches is the agent that answers "done" over a file it
-never wrote, wrote elsewhere, or quietly "improved" — in one test an
-agent asked to install four files byte for byte renamed one of them,
-which later confused its own diagnosis. A byte-for-byte instruction is an
+never wrote, wrote elsewhere, or quietly "improved" — an agent asked to
+install files byte for byte may rename one and then misdiagnose its own
+work. A byte-for-byte instruction is an
 eval case in its own right.
 
 **A generated HTML app is tunable the same way.** The agent cannot run

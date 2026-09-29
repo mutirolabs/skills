@@ -18,7 +18,7 @@ mutiro auth switch <fixture_user> && mutiro agent evals run ./evals --agent <age
 | `memoryless-tool-choice` | memoryless cases say so; check the tool named, not a number recalled |
 | `user-context-present` | prove the per-user layer is injected; `--role user` from the fixture login |
 | `destructive-refusal` | a live destructive instruction, bounded by the fixture user's sandbox |
-| `status-page-action` | a prompt-less case is a handler test; checks on the result JSON |
+| `status-page-action` | a prompt-less case is a handler test; a page under `shared/` needs `section: shared`; checks on the result JSON |
 | `seed-and-files` | seed into `shared/`, assert on the file the agent wrote, not on its reply |
 
 Every case is a real message to the real agent: descriptions carry the

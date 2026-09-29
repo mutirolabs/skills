@@ -3,10 +3,13 @@ description: >
   The status page's loadStatus request is answered by handlers.ts on the
   host, in shape, without a turn. Pattern: a case with no prompt is a
   handler test; its checks run on the result JSON (or on "error: <text>").
+  The page lives under shared/, so the source names the shared section
+  and a path inside it: the default section, other, hides shared/.
 role: owner
 action:
   name: loadStatus
-  source: shared/status/index.html
+  section: shared
+  source: status/index.html
   payload: '{"limit": 10}'
   checks:
     - regex: '"subjects":\s*\['

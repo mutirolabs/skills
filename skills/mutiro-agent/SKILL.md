@@ -70,7 +70,8 @@ by file. Beside it, never synced: `evals/` and `tests/`. Around it, never
 in the repo: the runtime's state files and the **conversation workspace**
 where the agent's own work lands (read it with `mutiro user workspace`).
 The workspace resolves per conversation: the owner sees everything, a user
-is sandboxed to `users/<x>/`. Most confusion about "where does this go"
+is sandboxed to `users/<x>/`. `.genie/bookmarks.json` pins workspace files
+as a quick menu in the apps. Most confusion about "where does this go"
 and "why didn't my change land" dissolves with this file.
 
 ## 3. Write instructions that hold
@@ -95,7 +96,8 @@ agent, bundled by the runtime with no build step:
 - **Page handlers** (`handlers.ts` beside a page under `shared/`): a
   page's requests answered deterministically, without a turn.
 - **`tools.decide`**, from any of the three: a typed judgment (a choice, a
-  score, a yes/no) answered by System One's Jev in one call, so code can
+  score, a yes/no) answered in one call by System One (with a
+  `SYSTEMONE_API_KEY` secret) or else the agent's Gemini model, so code can
   hold a rule that needs judgment without becoming a turn.
 
 `examples/` is a complete small config plane covering all three, with
@@ -119,9 +121,10 @@ mutiro agent dev types ./<name> --agent <username> # mutiro.d.ts typed from the 
 Live, against the agent, on the model-facing behavior: **evals**
 (`<name>/evals/*.yaml`, `references/evals.md`). A case is a prompt plus
 deterministic checks on the reply, and optionally seeded files, a page
-action and file checks. Every case is a real message to a real agent
-with real tools: frame it, forbid the sends, use fixture users for
-anything destructive.
+action and file checks. Checks see only reply text, action JSON and file
+bytes: there are no judges and no tool-called checks. Every case is a real
+message to a real agent with real tools: frame it, forbid the sends, use
+fixture users for anything destructive.
 
 ## 6. Deploy and keep the two sides in sync
 
@@ -133,9 +136,11 @@ mutiro agent files mark <username> ./<name>             # after pull + commit: r
 ```
 
 Push overwrites, never merges; the drift guard refuses to clobber an
-agent-side edit. Tools, hooks and skills load at boot (`--restart`, or
-the next wake). The discipline, traps and the hung-agent playbook:
-`references/tuning.md`.
+agent-side edit. When a change takes effect depends on the file: hooks and
+page handlers on the next call; tool extensions, skill descriptions and the
+soul at process start (`--restart`, or the next wake); the manual and
+per-user `AGENTS.md` after `/clear` in the conversation (or a restart).
+The discipline, traps and the hung-agent playbook: `references/tuning.md`.
 
 ## 7. Tune from issues
 
