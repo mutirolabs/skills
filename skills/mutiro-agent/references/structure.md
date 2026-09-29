@@ -185,17 +185,35 @@ README so the repo tells the whole story:
 - **Reactions reach the agent** as a threaded message
   (`[reacted ✅ to #msgid]`), preserving which message the reaction refers to.
 - **Scheduled routines** are schedules from the owner to the agent:
-  `mutiro user schedule create --recipient <agent> --instruction "..." --cron "0 11 * * *"`
-  (also `--interval-every`, `--once-at`, `--catch-up`). The fired message
-  is a turn, so the agent reads its manual and skills. The agent's own
-  `schedule_message_*` tools send messages out; they do not schedule its
-  own turns. Keep the instruction a dumb trigger with `/clear` as its
-  first line (it clears context before the turn) and put the behavior in
-  a skill; an identical daily prompt without `/clear` is dedup bait, the
-  agent sees yesterday's completion and answers "already done" with zero
-  tool calls. A memoryless routine needs every set it acts on to be a
-  query: anything old runs carried in conversation history needs a tool
-  or a status.
+
+  ```bash
+  mutiro agents schedule message <agent> $'/clear\nRun the daily audit: load the daily-audit skill and follow it.' \
+    --cron "0 8 * * 1-5" --timezone America/Sao_Paulo
+  ```
+
+  (also `--interval-every`, `--once-at`, `--catch-up`; `--user <name>`
+  lands it in the agent's conversation with that user instead of the
+  owner's). The fired message is a turn, so the agent reads its manual and
+  skills. The agent's own `schedule_message_*` tools send messages out;
+  they do not schedule its own turns. Keep the instruction a dumb trigger
+  with `/clear` as its first line (it clears context before the turn) and
+  put the behavior in a skill; an identical daily prompt without `/clear`
+  is dedup bait, the agent sees yesterday's completion and answers
+  "already done" with zero tool calls. A memoryless routine needs every
+  set it acts on to be a query: anything old runs carried in conversation
+  history needs a tool or a status.
+  - **Set `--timezone`.** Without it the cron runs in UTC, so "0 8" fires
+    at 08:00 UTC, not at the desk's 8am.
+  - **Key calendar work on "the first run since", not on a date.** A
+    weekday-only cron never fires on a 1st that falls on a weekend, so
+    "on the 1st, report last month's lapsed rules" silently skips; "the
+    first run after the month turned", from a query, does not.
+  - **`/clear` needs a real line break**, not the two characters `\n`:
+    `$'/clear\n...'` in bash, `` "/clear`n..." `` in PowerShell.
+  - **Verify, then fire once:** `mutiro agents schedule list <agent>` shows
+    the schedule and its next run; `mutiro agents schedule run-now <id>`
+    runs it immediately, so the routine is proven before the first
+    unattended morning.
 - **Sheets** (opt-in): named typed tables the agent keeps under
   `.mutiro/sheets/`, shareable to users, exportable to xlsx/csv.
 - **Skills discovery order**: `.claude/skills/` in the agent dir,
