@@ -98,6 +98,8 @@ an exception.
 
 ## After a platform or CLI upgrade
 
+The offline tooling is in `dev.md`; after an upgrade:
+
 - `mutiro agent dev check` and `test` refresh `mutiro.d.ts` when the CLI
   version changes; `dev types --agent` is the one to rerun by hand after
   the agent's surface changes (a tool enabled, a platform upgrade). Nobody does

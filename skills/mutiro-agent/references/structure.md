@@ -26,7 +26,7 @@ notes/                                 one agent: @notes_desk_x1w1
 ├── shared/                            owner-curated content for the agent and its users; pages live here
 │   └── status/{index.html, handlers.ts, HANDLERS.md}
 ├── evals/*.yaml                       behavioral tests (evals.md); NOT config plane, never syncs
-├── tests/*.test.ts                    unit tests for tools/hooks/handlers (extensions.md); never syncs
+├── tests/*.test.ts                    unit tests for tools/hooks/handlers (dev.md); never syncs
 ├── tsconfig.json                      committed; mutiro.d.ts is generated and gitignored
 └── .prettierrc
 ```

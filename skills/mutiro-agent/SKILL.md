@@ -110,7 +110,8 @@ the outcome; the fix is a tool, not a sentence.
 
 ## 5. Test offline, then live
 
-Offline, on the runtime's own engine with mocks, in seconds:
+Offline, on the runtime's own engine with mocks, in seconds
+(`references/dev.md`):
 
 ```bash
 mutiro agent dev check ./<name>                    # everything loads as the agent will; tsc if present
