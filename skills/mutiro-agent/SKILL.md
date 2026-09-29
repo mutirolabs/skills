@@ -28,8 +28,10 @@ mutiro auth whoami
 
 On Windows, from PowerShell: `irm https://mutiro.com/downloads/install.ps1 | iex`
 (the `curl | bash` line also works from Git Bash). The install adds `mutiro`
-to the user PATH, which only shells started afterwards see; until the
-session restarts, call it as `$LOCALAPPDATA/Programs/Mutiro/bin/mutiro.exe`.
+to the user PATH: the installing PowerShell window has it at once, other
+open shells only once restarted. Until then call it by path:
+`& "$env:LOCALAPPDATA\Programs\Mutiro\bin\mutiro.exe"` in PowerShell,
+`"$LOCALAPPDATA/Programs/Mutiro/bin/mutiro.exe"` in Git Bash.
 
 Your shell has no terminal to type a code into, so `auth login` and
 `auth signup` send the code and print the command that finishes the flow.
@@ -139,8 +141,8 @@ mutiro agent files mark <username> ./<name>             # after pull + commit: r
 
 Push overwrites, never merges; the drift guard refuses to clobber an
 agent-side edit. When a change takes effect depends on the file: hooks and
-page handlers on the next call; tool extensions, skill descriptions and the
-soul at process start (`--restart`, or the next wake); the manual and
+page handlers on the next call; skills on the next turn; tool extensions
+and the soul at process start (`--restart`, or the next wake); the manual and
 per-user `AGENTS.md` after `/clear` in the conversation (or a restart).
 The discipline, traps and the hung-agent playbook: `references/tuning.md`.
 

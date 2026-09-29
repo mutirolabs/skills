@@ -127,7 +127,7 @@ The offline tooling is in `dev.md`; after an upgrade:
   `references/structure.md`). In practice: soul (`.agent_instructions.md`)
   → `files push --restart`; manual and per-user AGENTS.md → `/clear` in
   the conversation you probe (`mutiro user conversation clear <agent>`);
-  hooks → the next call; tool extensions and skill descriptions →
+  hooks → the next call; skills → the next turn; tool extensions →
   restart. Verify with a probe that quotes the changed lines before
   concluding a fix failed.
 - **Deploy is not done when git is.** After a skipped push the agent will
@@ -166,8 +166,9 @@ Conversation reads return messages, never tool calls. The owner-only
 tool `conversation_message_get` returns an activity digest per message
 (`tool`, `args`, `summary`, `success`), so an audit of "did the action
 behind this claim happen" is a read of that digest, not a trace. CLI
-supervision reads (`message read --view-as`) return roughly the latest
-fifty messages whatever `--limit` says; deeper history is the agent's own
+supervision reads (`message read --view-as`) take `--limit` from 1 to 100
+(default 10; anything outside that range falls back to 50); deeper
+history is the agent's own
 `recall` and `conversation_read`. To narrow by sender or thread, use
 `agent message search --conversation <id> --view-as <agent>` with
 `--from` or `--reply-to` (no full-text search); the id is the

@@ -251,8 +251,9 @@ counts / hashes against ground truth kept outside the agent.
 ## Workspace artifacts: assert on files, tune a generated app
 
 The config plane is what you push; the **conversation workspace** is what
-the agent makes — pages, notes, state files, downloads. `files pull` never
-shows it. `mutiro user workspace` reads it through the public API with
+the agent makes — pages, notes, state files, downloads. `files pull` does
+not bring it back, except what the agent writes under `shared/`, which is
+config plane and syncs. `mutiro user workspace` reads it through the public API with
 your own standing: owners see the agent root (section `other` is the
 working directory, `--root user:<name>` a user's private root), users see
 their own. Reads never wake the agent, so they are free to run between

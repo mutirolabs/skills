@@ -16,8 +16,10 @@ mutiro auth login <email>                                   # passwordless; a co
 
 On Windows, from PowerShell: `irm https://mutiro.com/downloads/install.ps1 | iex`
 (the `curl | bash` line also works from Git Bash). The install adds `mutiro`
-to the user PATH, which only shells started afterwards see; until the
-session restarts, call it as `$LOCALAPPDATA/Programs/Mutiro/bin/mutiro.exe`.
+to the user PATH: the installing PowerShell window has it at once, other
+open shells only once restarted. Until then call it by path:
+`& "$env:LOCALAPPDATA\Programs\Mutiro\bin\mutiro.exe"` in PowerShell,
+`"$LOCALAPPDATA/Programs/Mutiro/bin/mutiro.exe"` in Git Bash.
 
 Your shell has no terminal to type a code into, so `auth login` and
 `auth signup` send the code and print the command that finishes the flow.
@@ -59,8 +61,9 @@ works once its `.env` is set: `MUTIRO_AGENT_API_KEY` (shown once at
 creation) and a model key, `GEMINI_API_KEY` by default, or another
 provider and model chosen in `.mutiro-agent.yaml` (`anthropic`, `openai`,
 `ollama`, `lmstudio`). Push the same config plane to it and hammer it; a
-burner has no connectors, so a hosted agent is still where connector
-behavior gets verified. Genie runs sandboxed on the local runtime
+fresh test agent starts with no connections bound, so connect the ones a
+test needs (`mutiro agents connections`) before verifying connector
+behavior on it. Genie runs sandboxed on the local runtime
 (`sandbox.enabled` in `.mutiro-agent.yaml`), but it is your machine and
 your keys; developers uneasy about that lose nothing by staying hosted. The host anchors everything to its working
 directory: `.genie/AGENTS.md`, skills, `.genie/tools`, hooks and MCP
@@ -198,8 +201,8 @@ read back); the desktop Tools tab can lag the daemon's inventory, and
 gets a platform suffix and cannot be renamed.
 
 Hosted behaviors to know: a config push lands on the agent's next wake.
-Hooks reload on every call; tool extensions and skill descriptions load
-at process start (`push --restart`, which discards in-flight turns); the
+Hooks reload on every call and skills on the next turn; tool extensions
+load at process start (`push --restart`, which discards in-flight turns); the
 soul is cached per process, the manual per conversation (`/clear` or a
 restart). `structure.md` has the full table. When in doubt, probe with a question
 that quotes the changed line. A silent agent may be a

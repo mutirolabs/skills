@@ -91,12 +91,17 @@ Supabase Edge Function in the same project, and the agent calls it with
 3. `supabase secrets set MUTIRO_FUNCTIONS_KEY=sb_secret_...` so the function
    can recognize the agent.
 
-The function runs as the data role (it sees what `supabase_sql` sees) and
-receives `x-mutiro-agent`, `x-mutiro-user`, `x-mutiro-role` and
+Mutiro calls the function with the key as the `apikey` header only, no
+`Authorization` JWT, so deploy it with `verify_jwt = false` (in
+`supabase/config.toml` under `[functions.<name>]`, or `--no-verify-jwt`);
+the default gateway rejects the call before your code runs. The function
+then receives `x-mutiro-agent`, `x-mutiro-user`, `x-mutiro-role` and
 `x-mutiro-conversation` headers. **Check the key before trusting them**:
-`verify_jwt` also admits the project's public key and signed-in app users,
-so compare the `apikey` header with `MUTIRO_FUNCTIONS_KEY` first and return
-401 otherwise. A call must answer within 25 seconds and responses are cut at
+compare the `apikey` header with `MUTIRO_FUNCTIONS_KEY` first and return
+401 otherwise. The call does not confine the function to the data role:
+what it can read and write in the database is set by the client it builds
+inside, so connect as the data role (not the service role) when it should
+see only what `supabase_sql` sees. A call must answer within 25 seconds and responses are cut at
 1 MiB; longer work is started by one call and collected by another. HTTP
 error statuses come back as `success: false` with the function's own
 message, so answer errors as JSON with an `error` field. Connections made

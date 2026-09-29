@@ -33,12 +33,12 @@ notes/                                 one agent: @notes_desk_x1w1
 
 ### What syncs
 
-`mutiro agent files` transfers exactly these paths and nothing else:
-`.agent_instructions.md`; `AGENTS.md` at the root; `.genie/AGENTS.md`;
-`.genie/bookmarks.json`; `.genie/skills/**`; `.genie/hooks/**`;
-`.genie/tools/**`; `users/*/AGENTS.md`; `shared/**`. Everything else in the directory stays local:
-`evals/`, `tests/`, `tsconfig.json`, `.prettierrc`, `mutiro.d.ts`. That is
-deliberate: the agent must never see its own tests.
+`mutiro agent files` transfers the config plane: `.agent_instructions.md`;
+`AGENTS.md` at the root; `.genie/AGENTS.md`; `.genie/bookmarks.json`;
+`.genie/skills/**`; `.genie/hooks/**`; `.genie/tools/**`;
+`users/*/AGENTS.md`; `shared/**` (everything under it). These never sync
+and stay local: `evals/`, `tests/`, `tsconfig.json`, `.prettierrc`,
+`mutiro.d.ts`. That is deliberate: the agent must never see its own tests.
 
 ### The four layers of context
 
@@ -97,8 +97,8 @@ from the workspace and refused by sync:
 - `.mutiro-tool-overrides.json` (the Tools tab's enable/disable),
   `.mutiro-tool-inventory.json`, `.mutiro-tool-declarations.json` (what
   `dev types --agent` reads);
-- `.genie/sessions/**` (traces), `.genie/hooks.state.json`,
-  `handlers.state.json` beside a page (auto-disable records);
+- `.genie/sessions/**` (traces), `.genie/hooks.state.json` (hook
+  auto-disable records);
 - `.genie/bundled-skills/**`, `.genie/published-skills/**`;
 - `MEMORY.md` (the agent's durable memory, `memory_write`),
   `.mutiro/memory/runtime/<conversation>/working_memory.yaml`,
@@ -191,8 +191,8 @@ synced by `files push`, and read-only to the model.
   the agent writes the file.
 - A push shows in `workspace bookmarks` within about a minute; the apps
   remember the menu for up to half an hour, or until they restart.
-- `mutiro user workspace bookmarks <agent> --root user:<name>` shows what
-  that user sees.
+- `mutiro user workspace bookmarks <agent>` shows your own menu; it does
+  not take another user's view, so check a user's menu from their side.
 
 Good use: pin a dashboard page the agent keeps under `shared/`.
 
@@ -220,8 +220,9 @@ When a pushed change takes effect:
 
 - hooks and `hooks/settings.json`: the next call;
 - page handlers: the next request;
-- tool extensions, a new skill or a changed skill description: a new
-  process (`files push --restart`, or the next wake);
+- tool extensions: a new process (`files push --restart`, or the next
+  wake);
+- a new skill or a changed skill description: the next turn;
 - the soul `.agent_instructions.md`: cached per process, so restart or
   the next cold start;
 - the manual `.genie/AGENTS.md` and the root and `users/<x>/` AGENTS.md:

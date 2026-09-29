@@ -301,8 +301,12 @@ pages and their handlers are agent-editable, so the agent can grow a page
 in conversation; pull those edits back into the repo (`tuning.md`).
 
 A handler imports only from its page's own folder; results are capped
-at 64 KiB; three failures disable the action in `handlers.state.json`
-beside the page until the file is fixed. Action names must be valid
+at 64 KiB; three failures switch the handler off in `handlers.state.json`
+beside the page. While it is off, the action still works, answered by a
+turn from the page's `HANDLERS.md`; fixing the code does not switch it
+back on: set its `enabled` to `true` in that file or remove its entry.
+That file sits under `shared/`, so it syncs: a `files pull` brings the off
+state into the repo and a push restores it. Action names must be valid
 function names (camelCase); any other name runs as a turn. Handlers do
 not get `extensions_only` access: they call the tools the viewer holds,
 which include the owner's extensions not marked `owner_only`, so a `notes_*` verb, not raw SQL,
@@ -373,8 +377,9 @@ work grows there are three places it can move to, in order of cost:
    `supabase_invoke`.** For logic that is a system rather than a verb: a
    reconciliation with its own state and history, parsing that needs a
    library, work that outgrows the 60-second extension run or the 1 MiB
-   result. The function runs as the agent's data role, deploys with your
-   Supabase CLI, and holds its own keys. Long work is started by one call
+   result. It deploys with your Supabase CLI and holds its own keys; its
+   database reach is whatever client it builds (connect as the data role
+   to keep it to what `supabase_sql` sees). Long work is started by one call
    and collected by another.
 3. **The agent image.** Two reasons justify one: a capability that must
    live next to the agent, such as MCP servers, a language runtime and
