@@ -295,9 +295,15 @@ README so the repo tells the whole story:
 - **Putting things in front of users**: `show_workspace_file` sends a
   clickable file card (anchor, line range, `auto_open`); a plain Markdown
   link does not open the preview. `send_card`/`update_card` send
-  interactive cards; a click arrives as
-  `[Card interaction: card=… action=… data=<json>]`, the text hooks and
-  evals see. In desktop and web with the workspace sidebar open, each
+  interactive **A2UI** cards (v0.9, basic catalog: flat components with
+  ids, a `root`, buttons that emit a named event with context), rendered
+  natively on mobile, desktop and web; see https://a2ui.org to learn the
+  format. A click arrives as `[Card interaction: card=… action=…
+  data=<json>]`, the text hooks and evals see. Keep each card's intent in
+  a skill (or a guide under `shared/`): what the card is for, the fields
+  it shows, its action names and context, and what to do on each
+  interaction. The model then builds the same card every time instead of
+  improvising one; leave visual design to the renderers. In desktop and web with the workspace sidebar open, each
   message carries `The user is currently viewing "<path>" in <scope>.`
   plus any selected text quoted with `> `; mobile does not send it.
 - **Skills discovery order**: `.claude/skills/` in the agent dir,
