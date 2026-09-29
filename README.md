@@ -4,6 +4,42 @@ Skills for agents working with Mutiro's tools. Each skill provides task-specific
 instructions, examples, and reference material to help an agent use those tools
 effectively.
 
+## Claude Code plugin
+
+For building and tuning Mutiro agents from Claude Code, install the `mutiro`
+plugin. It carries the `mutiro-agent` skill, which guides your assistant
+through creating an agent, its instructions, tool extensions, hooks, page
+handlers, tests, evals and deploys with the `mutiro` CLI.
+
+```text
+/plugin marketplace add mutirolabs/skills
+/plugin install mutiro@mutirolabs
+```
+
+Or from a shell:
+
+```sh
+claude plugin marketplace add mutirolabs/skills
+claude plugin install mutiro@mutirolabs
+```
+
+The plugin updates when a new version is released. Claude Code does not
+update third-party plugins on its own by default: run
+`claude plugin marketplace update mutirolabs`, or turn on auto-update for the
+`mutirolabs` marketplace in `/plugin`.
+
+To give everyone working in an agent's repo the plugin, commit this to the
+repo's `.claude/settings.json`:
+
+```json
+{
+  "extraKnownMarketplaces": {
+    "mutirolabs": { "source": { "source": "github", "repo": "mutirolabs/skills" } }
+  },
+  "enabledPlugins": { "mutiro@mutirolabs": true }
+}
+```
+
 ## Using the skills
 
 Browse the [skills directory](skills/) and choose the skills relevant to your
@@ -71,6 +107,10 @@ python3 -m venv .venv
 
 Maintainers publish reviewed content by tagging a stable version such as
 `v0.1.0`. The release workflow validates and packages each skill into its own ZIP.
+Before tagging, set each plugin's `version` in `.claude-plugin/marketplace.json`
+to the tag without its `v`: installed plugins update only when it changes, and
+the workflow refuses a tag that does not match. Check the manifest with
+`claude plugin validate --strict .`.
 
 ## Attribution
 
