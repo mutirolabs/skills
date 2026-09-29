@@ -16,8 +16,8 @@ failures found by running agents, not from style preference.
 - One-shot guidance for one user's next turn: `users/<user>/ONEOF_AGENTS.md`
   (written via the agent; injected once, then deleted).
 
-Only one context file per workspace loads (`GENIE.md` shadows `CLAUDE.md`
-shadows `AGENTS.md`); see `structure.md` for precedence and when each lands.
+Context files are always named `AGENTS.md`; `structure.md` has when each
+one lands.
 
 Agent files carry rules, procedures and examples, never incident history.
 Keep the shape of the failure, drop the anecdote; lifecycle goes in issues and

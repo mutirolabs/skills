@@ -34,10 +34,9 @@ notes/                                 one agent: @notes_desk_x1w1
 ### What syncs
 
 `mutiro agent files` transfers exactly these paths and nothing else:
-`.agent_instructions.md`; `AGENTS.md`, `GENIE.md`, `CLAUDE.md` at the
-root; `.genie/AGENTS.md`; `.genie/bookmarks.json`; `.genie/skills/**`;
-`.genie/hooks/**`; `.genie/tools/**`; `users/*/AGENTS.md` (and GENIE/CLAUDE, only at a user
-root); `shared/**`. Everything else in the directory stays local:
+`.agent_instructions.md`; `AGENTS.md` at the root; `.genie/AGENTS.md`;
+`.genie/bookmarks.json`; `.genie/skills/**`; `.genie/hooks/**`;
+`.genie/tools/**`; `users/*/AGENTS.md`; `shared/**`. Everything else in the directory stays local:
 `evals/`, `tests/`, `tsconfig.json`, `.prettierrc`, `mutiro.d.ts`. That is
 deliberate: the agent must never see its own tests.
 
@@ -50,9 +49,8 @@ the owner, `users/<x>/AGENTS.md` for user `x`), then skill descriptions,
 then memory. A skill body enters only when the model invokes the skill.
 Where a rule goes follows from this (`instructions.md`).
 
-- **One workspace context file loads**, by precedence `GENIE.md` >
-  `CLAUDE.md` > `AGENTS.md`. A stray `GENIE.md` silently shadows the
-  `AGENTS.md` beside it.
+- **A workspace's context file is its `AGENTS.md`.** Use `AGENTS.md`
+  for every context file, and no other name.
 - **Reading a file in a directory adds that directory's context file**
   for the rest of the engine's life: once the agent reads anything under
   `shared/<x>/`, `shared/<x>/AGENTS.md` is direction, not content.
