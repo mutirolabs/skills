@@ -369,6 +369,17 @@ dependency calls in order, and console output. `--role user` and
 
 ### Types
 
+`mutiro.d.ts` is where the signatures used in this file come from. It
+declares, without an import: `Tools` (the caller's tool surface),
+`ToolDefinition`, `ToolRun`, `ExtensionContext`, the hook types
+`OnMessage`, `BeforeTool`, `BeforeReply`, the page type
+`Handler<Payload>`, and `MessagePayload`/`MessagePart`. It also types the
+two virtual modules: `"mutiro"` (`ValidationError`, `Handoff`) and
+`"mutiro/test"` (`describe`, `it`, `expect`, `tool`, `hook`, `handler`,
+mocks). Annotate every export with its type (`export const beforeTool:
+BeforeTool = …`) so the editor and `tsc` check the shape the runtime
+calls.
+
 `mutiro.d.ts` is generated, stamped with the CLI version and refreshed by
 `check` and `test` after an upgrade; keep it out of version control
 (`.gitignore`) and commit `tsconfig.json`. Without `--agent` the `Tools`
