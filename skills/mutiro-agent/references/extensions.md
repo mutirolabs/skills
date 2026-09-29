@@ -11,7 +11,7 @@ Node or browser APIs, no npm packages. Imports between your own files work
 |---|---|---|---|
 | Tool extension | `.genie/tools/<name>.ts` (shared code in `.genie/tools/lib/`) | `tool`, `run` | the model calls the tool |
 | Hook | `.genie/hooks/*.ts` (all files form one program) | `onMessage`, `beforeTool`, `beforeReply` | around a turn |
-| Page handler | `handlers.ts` (or the agent's own `handlers.js`) beside a page's `index.html`, anywhere under the root | one function per action | a page calls `mutiro.request(action, payload)` |
+| Page handler | `handlers.ts` beside a page's `index.html`, anywhere under the root | one function per action | a page calls `mutiro.request(action, payload)` |
 
 Every one of them receives `tools`: the caller's own tool surface as
 synchronous functions, `tools.notes_list({ subject })`. The role
@@ -295,14 +295,10 @@ export const loadStatus: Handler<{ limit?: number }> = ({ payload, tools }) => {
 };
 ```
 
-The host looks for `handlers.ts` first, then `handlers.js`, and rebuilds
-the file on every request, so a push applies at once. `handlers.js` is
-the plain-JavaScript form the agent writes for itself. Unlike tools and
-hooks, pages and both handler files are agent-editable, so the agent can
-grow a page in conversation; pull those edits back into the repo
-(`tuning.md`). Because `handlers.ts` wins, a `handlers.js` the agent
-writes beside a developer's `handlers.ts` never runs: when the agent
-owns a page's handlers, ship it `handlers.js` or nothing.
+The host rebuilds `handlers.ts` on every request, so a push applies at
+once (a plain `handlers.js` is also supported). Unlike tools and hooks,
+pages and their handlers are agent-editable, so the agent can grow a page
+in conversation; pull those edits back into the repo (`tuning.md`).
 
 A handler imports only from its page's own folder; results are capped
 at 64 KiB; three failures disable the action in `handlers.state.json`
