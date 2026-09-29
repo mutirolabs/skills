@@ -11,7 +11,7 @@
     {
       "name": "mutiro",
       "description": "Build, test, deploy and tune Mutiro agents from your coding assistant with the mutiro CLI",
-      "version": "0.3.3",
+      "version": "0.3.4",
       "homepage": "https://mutiro.com/docs/manual/index.md",
       "repository": "https://github.com/mutirolabs/skills",
       "source": "./",
