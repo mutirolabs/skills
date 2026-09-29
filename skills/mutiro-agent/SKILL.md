@@ -96,9 +96,10 @@ agent, bundled by the runtime with no build step:
 - **Page handlers** (`handlers.ts` beside a page under `shared/`): a
   page's requests answered deterministically, without a turn.
 - **`tools.decide`**, from any of the three: a typed judgment (a choice, a
-  score, a yes/no) answered in one call by System One (with a
-  `SYSTEMONE_API_KEY` secret) or else the agent's Gemini model, so code can
-  hold a rule that needs judgment without becoming a turn.
+  score, a yes/no) answered in one call, so code can hold a rule that
+  needs judgment without becoming a turn. Hosted agents get it from
+  Mutiro's System One service with nothing to configure; self-hosted
+  backends are in `references/extensions.md`.
 
 `examples/` is a complete small config plane covering all three, with
 tests and a `dev run` for each; copy from it rather than starting blank.
