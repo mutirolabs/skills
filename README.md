@@ -107,10 +107,9 @@ python3 -m venv .venv
 
 Maintainers publish reviewed content by tagging a stable version such as
 `v0.1.0`. The release workflow validates and packages each skill into its own ZIP.
-Before tagging, set each plugin's `version` in `.claude-plugin/marketplace.json`
-to the tag without its `v`: installed plugins update only when it changes, and
-the workflow refuses a tag that does not match. Check the manifest with
-`claude plugin validate --strict .`.
+The same run sets each plugin's `version` in `.claude-plugin/marketplace.json`
+to the tag without its `v` and commits it to `main`; installed plugins update
+when it changes. Check the manifest with `claude plugin validate --strict .`.
 
 ## Attribution
 

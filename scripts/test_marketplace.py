@@ -21,7 +21,7 @@ class MarketplaceTests(unittest.TestCase):
 
     def test_plugins_carry_a_release_version(self):
         # Installed plugins update only when this changes; the release
-        # workflow requires it to match the tag being published.
+        # workflow sets it to the tag being published.
         for plugin in self.marketplace["plugins"]:
             self.assertRegex(plugin["version"], r"^\d+\.\d+\.\d+$", plugin["name"])
 
