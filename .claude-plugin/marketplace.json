@@ -1,0 +1,24 @@
+{
+  "name": "mutirolabs",
+  "owner": {
+    "name": "Mutiro Labs",
+    "url": "https://mutiro.com"
+  },
+  "metadata": {
+    "description": "Mutiro skills for your own coding assistant"
+  },
+  "plugins": [
+    {
+      "name": "mutiro",
+      "description": "Build, test, deploy and tune Mutiro agents from your coding assistant with the mutiro CLI",
+      "version": "0.3.3",
+      "homepage": "https://mutiro.com/docs/manual/index.md",
+      "repository": "https://github.com/mutirolabs/skills",
+      "source": "./",
+      "strict": false,
+      "skills": [
+        "./skills/mutiro-agent"
+      ]
+    }
+  ]
+}
