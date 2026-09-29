@@ -28,8 +28,10 @@ mutiro auth whoami
 
 On Windows, from PowerShell: `irm https://mutiro.com/downloads/install.ps1 | iex`
 (the `curl | bash` line also works from Git Bash). The install adds `mutiro`
-to the user PATH, which only shells started afterwards see; until the
-session restarts, call it as `$LOCALAPPDATA/Programs/Mutiro/bin/mutiro.exe`.
+to the user PATH: the installing PowerShell window has it at once, other
+open shells only once restarted. Until then call it by path:
+`& "$env:LOCALAPPDATA\Programs\Mutiro\bin\mutiro.exe"` in PowerShell,
+`"$LOCALAPPDATA/Programs/Mutiro/bin/mutiro.exe"` in Git Bash.
 
 Your shell has no terminal to type a code into, so `auth login` and
 `auth signup` send the code and print the command that finishes the flow.
@@ -70,7 +72,8 @@ by file. Beside it, never synced: `evals/` and `tests/`. Around it, never
 in the repo: the runtime's state files and the **conversation workspace**
 where the agent's own work lands (read it with `mutiro user workspace`).
 The workspace resolves per conversation: the owner sees everything, a user
-is sandboxed to `users/<x>/`. Most confusion about "where does this go"
+is sandboxed to `users/<x>/`. `.genie/bookmarks.json` pins workspace files
+as a quick menu in the apps. Most confusion about "where does this go"
 and "why didn't my change land" dissolves with this file.
 
 ## 3. Write instructions that hold
@@ -95,8 +98,10 @@ agent, bundled by the runtime with no build step:
 - **Page handlers** (`handlers.ts` beside a page under `shared/`): a
   page's requests answered deterministically, without a turn.
 - **`tools.decide`**, from any of the three: a typed judgment (a choice, a
-  score, a yes/no) answered by System One's Jev in one call, so code can
-  hold a rule that needs judgment without becoming a turn.
+  score, a yes/no) answered in one call, so code can hold a rule that
+  needs judgment without becoming a turn. Hosted agents get it from
+  Mutiro's System One service with nothing to configure; self-hosted
+  backends are in `references/extensions.md`.
 
 `examples/` is a complete small config plane covering all three, with
 tests and a `dev run` for each; copy from it rather than starting blank.
@@ -107,7 +112,8 @@ the outcome; the fix is a tool, not a sentence.
 
 ## 5. Test offline, then live
 
-Offline, on the runtime's own engine with mocks, in seconds:
+Offline, on the runtime's own engine with mocks, in seconds
+(`references/dev.md`):
 
 ```bash
 mutiro agent dev check ./<name>                    # everything loads as the agent will; tsc if present
@@ -119,9 +125,10 @@ mutiro agent dev types ./<name> --agent <username> # mutiro.d.ts typed from the 
 Live, against the agent, on the model-facing behavior: **evals**
 (`<name>/evals/*.yaml`, `references/evals.md`). A case is a prompt plus
 deterministic checks on the reply, and optionally seeded files, a page
-action and file checks. Every case is a real message to a real agent
-with real tools: frame it, forbid the sends, use fixture users for
-anything destructive.
+action and file checks. Checks see only reply text, action JSON and file
+bytes: there are no judges and no tool-called checks. Every case is a real
+message to a real agent with real tools: frame it, forbid the sends, use
+fixture users for anything destructive.
 
 ## 6. Deploy and keep the two sides in sync
 
@@ -133,9 +140,11 @@ mutiro agent files mark <username> ./<name>             # after pull + commit: r
 ```
 
 Push overwrites, never merges; the drift guard refuses to clobber an
-agent-side edit. Tools, hooks and skills load at boot (`--restart`, or
-the next wake). The discipline, traps and the hung-agent playbook:
-`references/tuning.md`.
+agent-side edit. When a change takes effect depends on the file: hooks and
+page handlers on the next call; skills on the next turn; tool extensions
+and the soul at process start (`--restart`, or the next wake); the manual and
+per-user `AGENTS.md` after `/clear` in the conversation (or a restart).
+The discipline, traps and the hung-agent playbook: `references/tuning.md`.
 
 ## 7. Tune from issues
 

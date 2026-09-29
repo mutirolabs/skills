@@ -37,8 +37,7 @@ imported code. A sequence of tool calls is not a transaction: no
 rollback, no retry.
 
 Runnable examples of every kind, with tests: `../examples/` (its README
-lists what each file shows). The code below is taken from them. A larger
-production implementation is named in each repo's own notes.
+lists what each file shows). The code below is taken from them.
 
 ## Tool extensions
 
@@ -66,8 +65,12 @@ export const run: ToolRun<Args> = ({ args, tools, context }) => {
 };
 ```
 
-- `inputSchema` is JSON Schema; it is what the model sees and what
-  `dev types` turns into the `Args` type of `tools.<name>()` for other code.
+- `inputSchema` is a JSON Schema subset: `type`, `properties`,
+  `required`, `items`, string `enum`, `nullable`, `description`. Any other
+  keyword fails at load. It is what the model sees and what `dev types`
+  turns into the `Args` type of `tools.<name>()` for other code.
+- `run` returns an object; anything else reaches the model wrapped as
+  `{ result: <value> }`.
 - `context` is set by the runtime, never by the model: `username`, `role`,
   `conversation_id`, `extension`, `execution_id`. Use it for authorship.
 - `requires` declares a dependency (`connection`, `secret`, `mount`,
@@ -75,7 +78,12 @@ export const run: ToolRun<Args> = ({ args, tools, context }) => {
 - `.genie/tools/settings.json` with `{"extensions_only": ["supabase_sql"]}`
   keeps a built-in tool callable from extensions but hidden from the
   model. This is how a raw capability becomes a safe vocabulary: the
-  model gets `notes_*` verbs, never SQL.
+  model gets `notes_*` verbs, never SQL. Some tools are extensions-only
+  by the platform and cannot be opened to the model (`endpoint_invoke`);
+  an image can set it too, and the desktop and web apps show such a tool
+  locked as "Extensions and hooks only". A setting for a tool the agent
+  does not have stays dormant. `owner_only` still applies to calls made
+  from extensions and hooks.
 - Descriptions are behavior. Change them deliberately, never as a side
   effect of a refactor; a description change deserves an eval run.
 - Factor what every tool repeats into `lib/`: the store access
@@ -99,23 +107,23 @@ operational state prefer one mutable row per entity plus an append-only
 events table over a fact store with folds. List tools return summary rows
 and exclude closed records by default, detail stays behind the get tool,
 and the descriptions say so ("list is for enumeration, get for detail"):
-an unfiltered list once returned every frozen quote table, 73k tokens per
-call. A deterministic reconciliation is a tool that stores the raw
+an unfiltered list that returns every record's full detail costs tens of
+thousands of tokens per call. A deterministic reconciliation is a tool that stores the raw
 external snapshot, computes the change set in code, writes the facts and
 returns the change set; the model handles the change set only. Over
 `supabase_sql`: batch writes (one insert for a listing, not one upsert per
 row), bind JSON with `JSON.stringify` and `::jsonb`, compare dates by day.
 
 A guard tool is a pre-action
-license, not post-action bookkeeping: the send-once check that the model
-was meant to call after emailing never fired; called before the send, its
+license, not post-action bookkeeping: a send-once check the model is
+meant to call after emailing gets skipped; called before the send, its
 refusal blocks the send. Every question the users' guide advertises needs
 a tool that answers it, so check the surface for enumeration holes (a
 `find_x` without a `list_x`): a missing lister sends the agent to file
 browsing, which returns nothing in a user seat and reads as "there are
 none". The ledger is written by the tool that changes state, never by an
-instruction to log: a "log every quote" rule fired once and decayed to
-silence while looking authoritative.
+instruction to log: a "log every request" rule fires a few times and
+decays to silence while still looking authoritative.
 
 Return measured facts, not summaries: include what was
 not found or skipped. Refuse with `ValidationError` and a message that
@@ -157,23 +165,29 @@ export const beforeReply: BeforeReply = ({ reply, to, tools }) => { /* ... */ };
 
 Rules of the three hooks:
 
+- Hooks and `hooks/settings.json` are read again on every call: a push
+  applies on the next message, no restart.
 - `onMessage` runs as the sender, before the turn. Mixing outcomes
-  (`{ skip, reply }`) is a failure. Three consecutive failures disable
-  the hook in `.genie/hooks.state.json` until fixed.
+  (`{ skip, reply }`) is a failure. A failure or a `Handoff` still runs
+  the turn, with the reason in front of the model. Three consecutive
+  failures disable the hook in `.genie/hooks.state.json` until fixed.
 - `beforeTool` runs before every model tool call and before a page
-  handler's calls. Any throw other than `ValidationError` refuses the
-  call every time; it never auto-disables. The `tools` it receives are
-  the unguarded originals, so a gate cannot loop on itself.
+  handler's calls. `Handoff` allows the call. Any throw other than
+  `ValidationError` refuses the call every time; it never auto-disables.
+  The `tools` it receives are the unguarded originals, so a gate cannot
+  loop on itself.
 - `beforeReply`: a `ValidationError` withholds the reply and gives the
   model one retry turn; a second refusal ends the turn with nothing sent.
+  Any other throw withholds the reply (enforcement fails closed); `Handoff`
+  sends it unchanged; returning both `text` and `parts` is a failure.
 - A hooks folder that fails to build **fails closed**: tool calls are
   refused until it is fixed. `check` before every push.
 - `.genie/hooks/settings.json` turns a hook off without deleting it:
   `{ "beforeReply": { "enabled": false, "reason": "Maintenance" } }`.
 
 A rule that gates one tool is a `beforeTool` hook, not a dependency
-between two tool packages: the broker client importing the registry
-library made the connector unusable without the desk.
+between two tool packages: a connector client that imports another
+group's library cannot be used without that group.
 
 A hook is where a rule becomes enforcement. The note-length example
 refuses oversized notes on every guarded call and trims outer whitespace
@@ -184,9 +198,9 @@ never silently truncates the user's facts.
 
 Code can branch only on what it can compare. When a rule needs a judgment
 the data does not state (what kind of message this is, whether a draft
-gives away a cost, whether a human must see it first), ask the `decide`
+gives away something internal, whether a human must see it first), ask the `decide`
 tool and branch on its typed answer: one call, several questions, no
-turn. It is the System One call, answered by Jev, a model built for typed
+turn. It is the System One call, answered by a model built for typed
 decisions rather than prose, and it is available to hooks, to tool
 extensions and to the model alike. It is what makes a hook or an extension
 able to hold a rule that needs judgment without becoming a turn, and it
@@ -197,7 +211,7 @@ need.
 const r = tools.decide({
   state: payload.text, // only what the questions need; the call is priced per input token
   questions: {
-    kind: { type: "choice", instructions: "What is this message to a notes desk?",
+    kind: { type: "choice", instructions: "What is this message?",
             criteria: { request: "asks for something to be done", update: "reports a fact about a payee", noise: "auto-reply, newsletter, bare thanks" } },
     urgency: { type: "score", instructions: "How urgent?", criteria: ["routine", "today", "urgent"] },
     human: { type: "noul", instructions: "Does this need a human before any reply?" },
@@ -221,7 +235,7 @@ provider is required for this fallback). That choice belongs to the
 owner's runtime setup, never the hook.
 
 The two kinds of answer do not mean the same thing by a number. System
-One's Jev returns calibrated probabilities; a chat-model backend returns
+One returns calibrated probabilities; a chat-model backend returns
 its own likelihood estimate. `confidence` is optional answer metadata:
 a calibrated `noul` can omit it, so its absence does not identify the
 chat-model backend. The `systemone:` backend prefix identifies the API
@@ -253,9 +267,9 @@ And a guard on what leaves, which fails closed when it cannot judge:
 ```ts
 export const beforeTool: BeforeTool = ({ name, args, tools }) => {
   if (name !== "email_send" && name !== "email_reply") return;
-  const r = tools.decide({ state: String(args.body || ""), questions: { leak: { type: "noul", instructions: "Does this client-facing text mention internal cost or margin?" } } });
+  const r = tools.decide({ state: String(args.body || ""), questions: { leak: { type: "noul", instructions: "Does this outgoing text reveal internal-only information?" } } });
   if (r.error) throw new ValidationError("the leak check is unavailable; do not send until the owner looks");
-  if (r.answers.leak.noul > 0.5) throw new ValidationError("draft mentions internal cost or margin");
+  if (r.answers.leak.noul > 0.5) throw new ValidationError("draft reveals internal-only information");
 };
 ```
 
@@ -267,8 +281,8 @@ test in `tests/`, and a push.
 
 A page under `shared/` (or anywhere under the root) is HTML the user opens
 from the workspace. It has no server: `await mutiro.request("loadStatus", {})`
-lands as a message in the conversation the page is open in. If
-`handlers.ts` beside the page exports a function of that name, the host
+lands as a message in the conversation the page is open in. If the
+handlers file beside the page exports a function of that name, the host
 runs it with the viewer's tools and no turn; otherwise the agent handles
 the request in a turn following the page's `HANDLERS.md`. A handler
 returns the page's result object or throws `ValidationError`.
@@ -281,26 +295,47 @@ export const loadStatus: Handler<{ limit?: number }> = ({ payload, tools }) => {
 };
 ```
 
+The host rebuilds `handlers.ts` on every request, so a push applies at
+once (a plain `handlers.js` is also supported). Unlike tools and hooks,
+pages and their handlers are agent-editable, so the agent can grow a page
+in conversation; pull those edits back into the repo (`tuning.md`).
+
 A handler imports only from its page's own folder; results are capped
-at 64 KiB; three failures disable the action in `handlers.state.json`
-beside the page until the file is fixed. Action names are camelCase
-identifiers. Handlers do not get `extensions_only` access: they call
-the tools the viewer holds. Unlike tools and hooks, a page and its
-handlers are agent-editable, so the agent can grow a page in
-conversation; pull those edits back into the repo (`tuning.md`).
+at 64 KiB; three failures switch the handler off in `handlers.state.json`
+beside the page. While it is off, the action still works, answered by a
+turn from the page's `HANDLERS.md`; fixing the code does not switch it
+back on: set its `enabled` to `true` in that file or remove its entry.
+That file sits under `shared/`, so it syncs: a `files pull` brings the off
+state into the repo and a push restores it. Action names must be valid
+function names (camelCase); any other name runs as a turn. Handlers do
+not get `extensions_only` access: they call the tools the viewer holds,
+which include the owner's extensions not marked `owner_only`, so a `notes_*` verb, not raw SQL,
+is how a page reaches the database.
+
+Drive a page from the CLI as the page would:
+`mutiro user message action <agent> loadStatus '{}' --section shared --source status/index.html --wait`.
+The payload is inline JSON, `@file` or `-` for stdin. The source is a
+path inside `--section` (default `other`, which hides `shared/`, so a
+page under `shared/` needs `--section shared`); `--root user:<name>`
+addresses a page in that user's workspace. `--wait-timeout` defaults to
+180 seconds; `--wait-turn` keeps waiting until the turn ends and reports
+any chat replies it sent.
 
 Grow a handler, do not write it up front: ship the page with the contract
 only, watch real payloads arrive as turns, then write the function for
 the routine path and keep `Handoff` for what needs judgement. Think of it
 as an HTTP handler that holds exactly the turn's tools. When a tool's
 output shape changes, rerun every handler test that reads it in the same
-change: a board once showed every record as "Assigned" because the
-handler parsed a field the new tool no longer returned.
+change: a handler that parses a field the tool no longer returns shows
+every record with a default value and no error.
 
 An extension whose name collides with a tool the image declares is
 refused at boot. Migrate under a temporary prefix and cut over in one
-sequence; and remember push does not delete without `--prune`, so the
-old files stay loaded beside the new ones.
+sequence. Push never deletes by default, so the old files stay loaded
+beside the new ones. `--prune` (off by default) deletes files the last
+deploy recorded that the local directory no longer has, but a first push
+or a `mark` records every file on the agent, including files the agent
+made itself; prune only in a repo that owns every synced file.
 
 Pages open on phones as well as desktops (the mobile app renders the same
 workspace), so every page is mobile-responsive from the first version: a
@@ -319,106 +354,11 @@ belongs in `handlers.ts`; anything needing judgement stays a procedure.
 The bundled `workspace-html` skill is what the agent itself follows when
 it writes pages; read it for the page side.
 
-## The dev loop
+## Checking it offline
 
-```bash
-mutiro agent dev check ./<dir>     # load everything as the agent will; tsc --noEmit if tsconfig + tsc exist
-mutiro agent dev test ./<dir>      # run tests/**/*.test.ts; --only <text>
-mutiro agent dev run ./<dir> tool:notes_list --args '{"subject":"acme"}' --mocks tests/mocks.ts
-mutiro agent dev run ./<dir> hook:beforeTool --call notes_add --args '{"subject":"acme","text":"  Prefers email  "}' --mocks tests/mocks.ts
-mutiro agent dev run ./<dir> handler:shared/status:loadStatus --payload '{}' --mocks tests/mocks.ts
-mutiro agent dev types ./<dir> --agent <agent>   # mutiro.d.ts + tsconfig.json for the editor and tsc
-```
-
-`check` prints each entry with the files it bundles and every error as the
-agent would report it at boot; run it before every push. `run` executes
-one target on the runtime's engine with mocks and prints the decision, the
-dependency calls in order, and console output. `--role user` and
-`--username` set the caller.
-
-### Types
-
-`mutiro.d.ts` is generated, stamped with the CLI version and refreshed by
-`check` and `test` after an upgrade; keep it out of version control
-(`.gitignore`) and commit `tsconfig.json`. Without `--agent` the `Tools`
-interface types your own extensions from their `inputSchema` and leaves
-other names open. With `--agent <username>` it fetches the hosted agent's
-enabled tools with their schemas and closes the interface: a tool the
-agent does not have is a type error, and each built-in tool's arguments
-are typed. Regenerate after adding a tool or after the agent's surface
-changes; the platform does not do it for you, and a hosted agent reports
-schemas only after it has run once on the current fleet build.
-
-### Tests
-
-Tests live in `tests/`, a sibling of `.genie`, so they never sync to the
-agent. They are TypeScript on the same engine, Bun-style:
-
-```ts
-import { describe, it, expect, tool, hook, handler } from "mutiro/test";
-import { notesStore } from "./mocks";   // a fake answering the SQL the tools issue
-
-describe("notes_add", () => {
-  it("refuses an empty subject and writes nothing", () => {
-    const store = notesStore();
-    const r = tool("notes_add").run({ subject: "  ", text: "x y z" }, { tools: store.tools });
-    expect(r.validation).toContain("subject is empty");
-    expect(store.notes).toHaveLength(0);
-  });
-});
-```
-
-- `tool(name).run(args, { tools, context })`, `hook(name).run(input, { tools, call })`,
-  `handler(pageDir, action).run(payload, { tools })` run the real code with
-  mocks and return `{ kind, result, validation, failure, handoff, refusal,
-  args, reply, text, parts, calls, logs }`. `calls` is the ordered list of
-  dependency calls with arguments and what the mock answered: assert on it
-  to pin *how* a tool worked, not only what it returned.
-- Mocks are plain functions from arguments to result; throw to make the
-  tool report an error. A dependency with no mock is a failure naming the
-  tool.
-- A fake of the backing store pays off fast: the examples' `tests/mocks.ts`
-  matches SQL by shape and records writes, so every tool test is a few
-  lines. A new statement in a tool needs a matching clause there.
-- Matchers: `toBe, toEqual, toMatchObject, toContain, toMatch, toBeTruthy,
-  toBeFalsy, toBeDefined, toBeUndefined, toBeNull, toHaveLength,
-  toBeGreaterThan(OrEqual), toBeLessThan(OrEqual), toThrow`, and `.not`.
-- Tests are synchronous; there is no `async` in the engine.
-
-A tool change gets a test in the same commit. Fixing a live misbehavior
-starts with a failing test that reproduces it (red), then the fix (green),
-then a push; the eval (`evals.md`) guards the model-facing side of the
-same change.
-
-### Lessons from converting a tool set
-
-- **Convert with the metadata byte-identical.** A refactor that also
-  reworded a description changes model behavior in the same commit as the
-  code change; when the evals then move, you cannot tell which did it.
-  Diff the `tool` exports before and after.
-- **A red test first, even for a "simple" lookup.** Writing the fixture
-  for a ranked customer lookup showed the shared-domain case the old code
-  got wrong; the test failed on the old ranking, then passed on the new.
-  A test written after the fix would have encoded the bug.
-- **The fake store answers by shape, so its clauses order matters.** Put
-  the most specific SQL match first; an unmatched statement must throw,
-  never return empty rows, or a new tool query silently tests nothing.
-- **Compare dates by day, not by instant**, when a tool reconciles an
-  external feed against the store: two representations of the same day
-  (with and without a time) read as a change every sync otherwise.
-- **Rules derived from Go maps arrive in no fixed order.** A test that
-  asserts on the order of policy rules coming from the platform must sort
-  first.
-
-### Conventions worth copying
-
-- `tsconfig.json` at the agent root, `include` covering `mutiro.d.ts`,
-  `.genie/tools/**/*.ts`, `.genie/hooks/**/*.ts`, `shared/**/*.ts`,
-  `tests/**/*.ts`; `"types": []` so Node types do not leak in.
-- `.prettierrc` with a wide `printWidth` (140): tool descriptions and SQL
-  read better on one line.
-- One tool per file, named for the tool; shared code in `lib/`; a `desk.ts`
-  style helper for the repeated metadata; comments say why, not what.
+`mutiro agent dev check|run|test|types`, the `mutiro/test` harness, mocks,
+`mutiro.d.ts` and `tsconfig.json`: `dev.md`. Run `dev check` before every
+push.
 
 ## Where the logic goes as it grows
 
@@ -430,24 +370,25 @@ work grows there are three places it can move to, in order of cost:
 1. **An HTTP API the owner registers, called through `endpoint_invoke`**
    (`connections.md`). The verbs stay extensions; only the outside world
    moves behind a registered endpoint. This is the answer to "the engine has
-   no I/O": a broker, a CRM, the client's own backend. No Mutiro release,
+   no I/O": a CRM, a partner's API, your own backend. No Mutiro release,
    two secrets, a folder of verbs. The tool is extensions-only by the
    platform, so the model still sees only your verbs.
-2. **A Supabase Edge Function in the client's project, called through
+2. **A Supabase Edge Function in your project, called through
    `supabase_invoke`.** For logic that is a system rather than a verb: a
    reconciliation with its own state and history, parsing that needs a
    library, work that outgrows the 60-second extension run or the 1 MiB
-   result. The function runs as the agent's data role, deploys with the
-   client's Supabase CLI, and holds its own keys. Long work is started by
-   one call and collected by another.
+   result. It deploys with your Supabase CLI and holds its own keys; its
+   database reach is whatever client it builds (connect as the data role
+   to keep it to what `supabase_sql` sees). Long work is started by one call
+   and collected by another.
 3. **The agent image.** Two reasons justify one: a capability that must
    live next to the agent, such as MCP servers, a language runtime and
    libraries the code needs, or a headless browser, none of which a function
-   elsewhere replaces; and verbs a second client in the same trade would
-   want unchanged (`structure.md`, where a thing belongs). Images are
-   Mutiro-built and pinned by the platform, so this path is a request
-   rather than a push, and business logic that is one client's stays in
-   that client's repo and project.
+   elsewhere replaces; and verbs many agents would want unchanged
+   (`structure.md`, where a thing belongs). Hosted images are built by
+   Mutiro, so this path is a request to Mutiro (or a self-hosted agent)
+   rather than a push, and business logic that is one agent's stays in
+   that agent's repo and project.
 
 Signals that a verb has outgrown its extension: you are batching or paging
 to fit the run deadline or the result cap; a several-hundred-line file
@@ -455,18 +396,19 @@ mirrors an external API by hand; the tool list needs a map to explain which
 verb to call when, at which point a few higher-level operations behind an
 API and a smaller set of verbs give the model fewer choices.
 
-A desk registry of about twenty verbs plus a broker sync is a concrete
-example: the verbs stay extensions, the broker becomes a registered
-endpoint, and the deterministic sync (store the raw snapshot, compute the
-change set) is the piece that earns a function. Whatever moves, keep the
+A registry of about twenty verbs plus a sync from an outside system is the
+typical split: the verbs stay extensions, the outside system becomes a
+registered endpoint, and the deterministic sync (store the raw snapshot,
+compute the change set) is the piece that earns a function. Whatever moves, keep the
 contract: the tool names, descriptions and schemas the evals bind to, with
 the implementation behind them. Hooks stay where they are; a gate is a
 runtime concern whatever the backend.
 
 ## Deploying extensions
 
-Definitions load at the agent's boot. After `mutiro agent files push`, a
-new or changed tool, hook or handler is live at the agent's next wake, or
-immediately with `--restart` (which discards in-flight turns; each repo's
-notes say when that is allowed). A pushed tool whose `check` failed is a
-boot error on the agent: run `check` and `test` before every push.
+After `mutiro agent files push`, hooks apply on the next call and page
+handlers on the next request. Tool extensions load at the agent's boot:
+a new or changed tool is live at the next wake, or immediately with
+`--restart` (which interrupts any active conversation). A pushed tool
+whose `check` failed is a boot error on the agent: run `check` and
+`test` before every push.

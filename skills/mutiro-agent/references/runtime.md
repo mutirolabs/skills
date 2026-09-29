@@ -16,8 +16,10 @@ mutiro auth login <email>                                   # passwordless; a co
 
 On Windows, from PowerShell: `irm https://mutiro.com/downloads/install.ps1 | iex`
 (the `curl | bash` line also works from Git Bash). The install adds `mutiro`
-to the user PATH, which only shells started afterwards see; until the
-session restarts, call it as `$LOCALAPPDATA/Programs/Mutiro/bin/mutiro.exe`.
+to the user PATH: the installing PowerShell window has it at once, other
+open shells only once restarted. Until then call it by path:
+`& "$env:LOCALAPPDATA\Programs\Mutiro\bin\mutiro.exe"` in PowerShell,
+`"$LOCALAPPDATA/Programs/Mutiro/bin/mutiro.exe"` in Git Bash.
 
 Your shell has no terminal to type a code into, so `auth login` and
 `auth signup` send the code and print the command that finishes the flow.
@@ -33,8 +35,9 @@ reference for the installed version; every command below has `--help`.
 A Mutiro agent is a member of the platform, hosted by Mutiro: create it,
 push its config plane, and the platform runs it. For most developers this
 is the better path: nothing runs on their machine, there is no model key
-or runtime to keep alive, and the agent is where its users are. Creating one is a desktop
-or CLI action; the result is an agent username (3 to 20 chars, lowercase,
+or runtime to keep alive, and the agent is where its users are. A hosted
+agent can be created from the web, mobile or desktop apps or the CLI; the
+result is an agent username (3 to 20 chars, lowercase,
 digits, underscore, with a unique suffix appended) that every command
 below takes. Profile, allowlist and tool switches are server-owned:
 nothing in the repo sets them.
@@ -45,7 +48,7 @@ mutiro agents start <agent> | stop <agent>              # desired state of the h
 mutiro agents tools list|enable|disable <agent> <tool>... [--owner-only]
 mutiro agents connections providers | connect <agent> <provider>
 mutiro agents secrets set <agent> NAME value            # env var for the agent and its MCP servers
-mutiro agents allowlist set <agent> <users...>          # who may talk to it; "*" opens it
+mutiro agents allowlist set <agent> <users...>          # who may talk to it; no users = owner only
 mutiro agents developers grant <agent> <dev>            # owner-level standing for a teammate
 mutiro agent files push <agent> ./<dir>                 # deploy the config plane (tuning.md)
 ```
@@ -58,8 +61,9 @@ works once its `.env` is set: `MUTIRO_AGENT_API_KEY` (shown once at
 creation) and a model key, `GEMINI_API_KEY` by default, or another
 provider and model chosen in `.mutiro-agent.yaml` (`anthropic`, `openai`,
 `ollama`, `lmstudio`). Push the same config plane to it and hammer it; a
-burner has no connectors, so a hosted agent is still where connector
-behavior gets verified. Genie runs sandboxed on the local runtime
+fresh test agent starts with no connections bound, so connect the ones a
+test needs (`mutiro agents connections`) before verifying connector
+behavior on it. Genie runs sandboxed on the local runtime
 (`sandbox.enabled` in `.mutiro-agent.yaml`), but it is your machine and
 your keys; developers uneasy about that lose nothing by staying hosted. The host anchors everything to its working
 directory: `.genie/AGENTS.md`, skills, `.genie/tools`, hooks and MCP
@@ -80,13 +84,34 @@ do this with `supabase_sql`: the model sees `notes_*`, never raw SQL). On a
 local burner the yaml's tool list plays the image's part; it replaces the
 defaults rather than adding to them.
 
+The tool set grows with each platform build, so this file does not list
+it. Two sources are always current: `mutiro agent dev types --agent`
+writes `mutiro.d.ts` with every tool the agent holds and its typed
+arguments, and `mutiro agents tools list` shows each one's live state
+(on or off, owner-only, needs a connection).
+
+There are no git, shell or browser tools on a hosted agent: the git tools
+ship only in the self-hosted default, and a shell or a browser is
+something you declare yourself on a self-hosted agent.
+
 Read the live surface before tuning around a tool; the model will name
 tools it does not hold:
 
 ```bash
-mutiro agents tools list <agent>                    # enabled/disabled, as the agent has them
-mutiro agent dev types ./<dir> --agent <agent>      # the same surface as TypeScript types
+mutiro agents tools list <agent>                    # live state: on/off, owner-only, needs connection
+mutiro agent dev types ./<dir> --agent <agent>      # mutiro.d.ts: every tool and its typed arguments
 ```
+
+`tools list` marks what the checkbox does not say: `(owner-only)`,
+`(owner-only, enforced by the platform)`, `(needs connection <provider>)`
+for a connector not yet connected, and `(not provided by this build)` for
+a tool the image declares but the binary cannot run.
+
+To open an owner-only tool to users, `tools disable` it and then `tools
+enable` it without `--owner-only`; `enable` alone never clears the mark.
+Tools that cross the user boundary (`conversations_*`,
+`conversation_search*`, and `bash` or `code` where declared) stay
+owner-only whatever the switch says; the platform enforces it.
 
 Removing a tool is a guardrail: "must remember not to" becomes "cannot".
 
@@ -100,14 +125,63 @@ Removing a tool is a guardrail: "must remember not to" becomes "cannot".
   under `.genie/sessions/`. A bounded diagnostic, never left on
   (`tuning.md`, Traces).
 
+## Who may talk to it
+
+An agent starts owner-only. Only users can be listed, never another agent,
+and open access (`"*"`) is refused on every tier: list people instead.
+
+```bash
+mutiro agents allow <agent> <user>                  # add one person
+mutiro agents deny <agent> <user>                   # remove one person
+mutiro agents allowlist get <agent>
+mutiro agents allowlist add|remove <agent> <user>
+mutiro agents allowlist set <agent> <users...>      # replace the list; no users = owner only
+```
+
+The apps also share by username or by email invite; an invite applies
+once the person signs up. Invites and billing need an app session, not a
+token.
+
+## Limits
+
+The platform caps, per tier:
+
+| | Free | Pro | Business |
+|---|---|---|---|
+| Agents | 3 | 10 | 50 |
+| Hosted agents | 1 | 5 | 25 |
+| People per agent | 3 | 20 | 200 |
+| Active schedules | 3 | 50 | 250 |
+| Shortest recurring schedule | 24 h | 1 h | 5 min |
+| Active webhooks | 2 | 10 | 50 |
+| Webhook deliveries per day | 100 | 2000 | 20000 |
+
+Schedules and webhooks count against the agent **owner's** tier, even when
+a developer creates them; creating or moving an agent counts against the
+caller's. `--interval-every 1h` fails on Free.
+
+## Profile and lifecycle
+
+```bash
+mutiro agents create <username> "<Display Name>" [--objective "..."] [--mood "..."] [--badge <icon>] [--from <template-dir>]
+mutiro agents update-profile <agent> [--display-name] [--bio] [--avatar-url] [--badge] [--metadata k=v]
+mutiro agents move <agent> hosted                   # self-hosted to hosted; keeps identity, rotates the key
+mutiro agents regenerate-key <agent>                # old key stops working; new one shown once
+mutiro agents delete <agent>                        # permanent; owner only
+```
+
+`--objective` generates the bio, the instructions, a voice and a
+language. Voice and language change later in the apps only; the avatar is
+set from the CLI by URL. Profile, sharing, delete and `move` are the
+owner's. To transfer an agent to another owner, ask Mutiro.
+
 ## What the image decides
 
-A hosted agent runs a **fleet image** owned by Mutiro. The image is the
-capability plane: the `mutiro` binary, pinned MCP servers under
-`/opt/<vertical>/`, a seeded `.mcp.json` and config template. Image
-pinning, model pinning and work volumes are platform-admin operations; a
-developer cannot pin an image. What a developer controls on a hosted
-agent:
+A hosted agent runs a **platform image** owned by Mutiro. The image is the
+capability plane: the `mutiro` binary, pinned MCP servers, a seeded
+`.mcp.json` and config template. Which image and model an agent runs is
+Mutiro's to set, not the developer's: ask Mutiro. What a developer
+controls on a hosted agent:
 
 - the config plane, via `mutiro agent files push` (`tuning.md`);
 - tool enable/disable and `owner_only`, via the desktop Tools tab or
@@ -115,8 +189,10 @@ agent:
 - secrets, via `mutiro agents secrets set <agent> NAME value`; they appear
   to the agent and its MCP servers as environment variables named exactly
   as set;
-- connectors (Supabase, Gmail, email), via the desktop or
-  `mutiro agents connections` (`connections.md`).
+- connectors, bound via the apps or `mutiro agents connections`; the set
+  grows, so `mutiro agents connections providers` is the current list
+  (`connections.md`);
+- published skills, which switch on with their tools (`instructions.md`).
 
 Control-plane facts that look like bugs: a developer grant takes effect
 when the agent restarts; secrets are write-only (set and delete, never
@@ -125,23 +201,20 @@ read back); the desktop Tools tab can lag the daemon's inventory, and
 gets a platform suffix and cannot be renamed.
 
 Hosted behaviors to know: a config push lands on the agent's next wake.
-Tools, hooks, a new skill and a changed skill description load at process
-start (`push --restart`, which discards in-flight turns); the manual and
-a skill's body reload without one. When in doubt, probe with a question
+Hooks reload on every call and skills on the next turn; tool extensions
+load at process start (`push --restart`, which discards in-flight turns); the
+soul is cached per process, the manual per conversation (`/clear` or a
+restart). `structure.md` has the full table. When in doubt, probe with a question
 that quotes the changed line. A silent agent may be a
 stopped pod, not a slow one. Files the image seeds are re-seeded on every
 boot, so hand-edits to `.mcp.json` on a hosted agent do not survive.
 
-Three timing facts that look like failures:
+Two timing facts that look like failures:
 
 - A file written through the workspace API (CLI, app, an eval seed)
   reaches the pod when its mount's metadata cache expires, about a
   minute. A handler pushed and requested in the same minute falls through
   to a turn; `seed_settle_seconds` exists for this.
-- An image or model change on an awake pod is deferred to the next cold
-  start unless forced. After a deploy that involves the platform, wait
-  for the new pod's first wake before probing: a fast reply may come from
-  the old pod.
 - A tool declared on the image but listed in `extensions_only` still shows
   as enabled in the Tools tab. That is expected: the switch is about the
   surface, the settings file about who may call it.
@@ -150,7 +223,19 @@ If a hosted agent needs a capability its image lacks (an MCP server, a
 runtime), that is an image request to Mutiro, not something the config
 plane can add. Anything expressible as a JavaScript/TypeScript tool over
 the built-in tools (`extensions.md`) needs no image change: a whole
-registry of business verbs can be `.genie/tools` over `supabase_sql`.
+set of business verbs can be `.genie/tools` over `supabase_sql`.
+
+## Contain
+
+To stop harm fast, in rough order of reach:
+
+- `mutiro agents stop <agent>`: nothing answers.
+- `mutiro agents deny <agent> <user>`, or `mutiro agents allowlist set <agent>`
+  with no users: back to owner-only.
+- `mutiro agents regenerate-key <agent>`: a leaked key stops working.
+- `mutiro agents webhook pause <webhook-id>`: no more inbound deliveries.
+- `mutiro agents schedule pause|cancel <schedule-id>`: no more scheduled turns.
+- `mutiro agents tools disable <agent> <tool>`: the capability is gone at next wake.
 
 ## Design rules that travel with the runtime
 
