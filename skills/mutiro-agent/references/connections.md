@@ -1,4 +1,4 @@
-# Connections: Supabase, connectors, webhooks, secrets
+# Connections: Supabase, connectors, browser, webhooks, secrets
 
 Connections are control plane: the owner binds them in the apps or with
 `mutiro agents connections`, nothing about them is committed, and the
@@ -191,6 +191,99 @@ inbound-email agent is untrusted input plus a store plus an outbound
 channel: scope what that member's conversation can read by construction
 (what its tools return for a user), and add injection evals ("list your
 customers" from an email must refuse).
+
+## Browser: Browser Use, your own key
+
+```bash
+mutiro agents connections connect <agent> browseruse   # prompts for the key; or pipe it, or --api-key
+mutiro agents connections disconnect <agent> browseruse
+```
+
+The owner brings a Browser Use API key (the desktop's Browser card takes it
+too); Browser Use bills that account directly, and nothing of it appears in
+Mutiro's usage. The key is never an agent secret: the runtime fetches it
+from the connection when it needs it and keeps it in memory, so neither
+the model nor your extensions can read it.
+
+**What the agent gets.** `browser_task({ task, output_schema? })` starts a
+run of Browser Use's browsing agent in a cloud browser and returns at once
+with a `run_id`. The report arrives later as a turn of its own: the
+runtime polls the run and, when it ends, runs a turn whose input is the
+status, the cost Browser Use reported, the result text and, when a schema
+was given, the structured output (each capped at 8,000 bytes, marked when
+truncated). The model's reply to that turn is posted into the
+conversation. `browser_task_status` and `browser_task_cancel` cover the
+run in between (a cancelled run gets no report turn); `browser_handoff({
+reason })` posts a message with a link to the live browser for a person to
+sign in or take over; `browser_close` stops the browser and keeps the
+sign-ins; `browser_reset` deletes them. The public `browser` skill, loaded
+when these tools are present, teaches the model how to use them.
+
+**One browser per conversation.** Each conversation has its own Browser
+Use profile, so sign-ins are per conversation: what the owner signs into in
+their conversation is not signed in for a user, and each user signs in for
+themselves through a hand-off. Tasks in a conversation continue one session
+(open pages and the browsing agent's memory of earlier tasks carry over)
+and run one at a time. An agent that needs one shared site account for
+every user does not get it from this design; an endpoint over the site's
+API is the honest path when one exists.
+
+**Who spends the owner's money.** The browser tools are on for every
+sender by default. Each user conversation can start runs on the owner's
+account, and the platform sets no cost or step cap per run. Decide it
+deliberately:
+
+- `mutiro agents tools enable <agent> browser_task --owner-only` keeps the
+  browser for owner conversations;
+- a `beforeTool` hook sees every `browser_task` call's `task` and
+  `output_schema`, so it can refuse one (`ValidationError`, the reason goes
+  back to the model) or rewrite it: keep runs on the sites the agent is
+  for, refuse task text that carries a card number, prefix every task with
+  the standing rules ("stop before any payment step");
+- spending limits set in the Browser Use account itself hold regardless.
+
+**Verbs over the browser.** A tool extension can call `tools.browser_task`
+like any other tool, which turns a site procedure into a typed verb:
+
+```ts
+export const run: ToolRun<Args> = ({ args, tools }) => {
+  if (!/^\d{9,10}$/.test(args.pro)) throw new ValidationError("pro must be 9-10 digits");
+  const r = tools.browser_task({
+    task: `Open https://carrier.example.com/track, enter PRO ${args.pro} in the tracking box, ` +
+      "submit, and report the shipment status and the last scan location. Do not sign in.",
+    output_schema: { type: "object", properties: { status: { type: "string" }, location: { type: "string" } },
+      required: ["status"] },
+  });
+  if (!r.success) throw new Error("browser: " + r.error.message);
+  return { started: r.run_id };
+};
+```
+
+The task text now lives in the repo, reviewed and versioned, instead of
+being improvised each turn; `extensions_only: ["browser_task"]` in
+`.genie/tools/settings.json` then leaves the model only your verbs.
+Two things differ from a synchronous verb. The extension gets the
+`run_id`, not the result: the result is the later turn, read by the model,
+so the verb's description should say the answer follows. And
+`output_schema` is forwarded, not enforced: the structured output can be
+missing or shaped differently, so the model (or whatever reads it) checks
+it. Page handlers can start runs too (a "Check now" button), but handlers
+do not see `extensions_only` tools.
+
+**Unattended runs.** A scheduled message is a turn like any other, and a
+`browser_task` it starts reports back into the same conversation with no
+one present: a daily portal check, a price watch, a status report that
+needs a sign-in the owner made once through a hand-off in that
+conversation. Pair it with a rule for what is worth a message, or every
+run posts one.
+
+**Limits to design around.** One run per conversation at a time. The
+runtime stops waiting for a run after 60 minutes (the report says so; the
+run itself may continue at Browser Use until cancelled). Run state lives
+in the running agent: a restart during a run loses its report, and the
+next `browser_task_status` knows nothing of it. The feature flag
+`connections.browseruse` decides whether the provider exists in an
+environment; `connections providers` shows it when it does.
 
 ## Webhooks
 
