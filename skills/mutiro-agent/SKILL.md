@@ -59,8 +59,8 @@ mkdir <name> && mutiro agent files pull <username> ./<name>
 ```
 
 Who it talks to, which tools are on, and the model are control-plane
-settings, not files: `references/runtime.md`. Databases, connectors, APIs and
-secrets, including how the Supabase roles work, how to grant them access
+settings, not files: `references/runtime.md`. Databases, connectors, a cloud
+browser, APIs and secrets, including how the Supabase roles work, how to grant them access
 to your own schema, and how to register an HTTP API as an endpoint your
 extensions can call: `references/connections.md`.
 

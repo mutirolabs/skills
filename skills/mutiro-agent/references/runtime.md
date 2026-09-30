@@ -90,9 +90,10 @@ writes `mutiro.d.ts` with every tool the agent holds and its typed
 arguments, and `mutiro agents tools list` shows each one's live state
 (on or off, owner-only, needs a connection).
 
-There are no git, shell or browser tools on a hosted agent: the git tools
-ship only in the self-hosted default, and a shell or a browser is
-something you declare yourself on a self-hosted agent.
+There are no git or shell tools on a hosted agent: the git tools ship
+only in the self-hosted default, and a shell is something you declare
+yourself on a self-hosted agent. A hosted agent's browser is a connection,
+Browser Use with the owner's key (`connections.md`, Browser).
 
 Read the live surface before tuning around a tool; the model will name
 tools it does not hold:
