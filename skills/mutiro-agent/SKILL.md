@@ -146,7 +146,17 @@ and the soul at process start (`--restart`, or the next wake); the manual and
 per-user `AGENTS.md` after `/clear` in the conversation (or a restart).
 The discipline, traps and the hung-agent playbook: `references/tuning.md`.
 
-## 7. Tune from issues
+## 7. Know what it spends
+
+`references/budgets.md`. The owner's plan has one monthly budget shared by
+all their agents; every turn, search, image, voice message and memory
+lookup is paid from it. `mutiro user usage` shows spend by source and by
+agent, and `mutiro agents spend-limit <agent> <usd>` keeps one agent from
+spending what the others need. The cost levers, from switching tools off
+to settling messages in a hook with `decide` so they never become a turn,
+are in that file.
+
+## 8. Tune from issues
 
 `references/tuning.md`: take an issue, reproduce with a probe or eval,
 diagnose (traces show what the model actually saw; self-reports are not

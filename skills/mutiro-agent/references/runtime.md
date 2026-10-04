@@ -161,6 +161,11 @@ Schedules and webhooks count against the agent **owner's** tier, even when
 a developer creates them; creating or moving an agent counts against the
 caller's. `--interval-every 1h` fails on Free.
 
+Each plan also has a monthly spend budget that all the owner's agents
+share; `mutiro user usage` shows it and what each agent spent, and
+`mutiro agents spend-limit <agent> <usd>` caps one agent's share
+(`budgets.md`).
+
 ## Profile and lifecycle
 
 ```bash
@@ -237,6 +242,8 @@ To stop harm fast, in rough order of reach:
 - `mutiro agents webhook pause <webhook-id>`: no more inbound deliveries.
 - `mutiro agents schedule pause|cancel <schedule-id>`: no more scheduled turns.
 - `mutiro agents tools disable <agent> <tool>`: the capability is gone at next wake.
+- `mutiro agents spend-limit <agent> <usd>`: a runaway agent stops spending
+  before it reaches the rest of the plan.
 
 ## Design rules that travel with the runtime
 
