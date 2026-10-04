@@ -76,12 +76,6 @@ can spend it.
 
 **What is not charged to the plan:**
 
-- Your own keys. On an agent running an Anthropic, OpenAI or DeepSeek
-  model, an owner secret with that provider's key (`ANTHROPIC_API_KEY`,
-  `OPENAI_API_KEY`, `DEEPSEEK_API_KEY`) sends model calls straight to the
-  provider on your account; Mutiro does not see or record them. The
-  default model runs on Mutiro and cannot be moved to your key. Which
-  model a hosted agent runs is Mutiro's to set: ask Mutiro.
 - Connections that run on your own account, like the Browser Use
   browser (`connections.md`).
 - A self-hosted agent's model calls, on the keys in its `.env`. The Mutiro
