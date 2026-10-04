@@ -78,7 +78,7 @@ can spend it.
 
 - Connections that run on your own account, like the Browser Use
   browser (`connections.md`).
-- A self-hosted agent's model calls, on the keys in its `.env`. The Mutiro
+- A self-hosted agent's model calls. The Mutiro
   services it uses (search, images, voice, memory, decisions) are still
   paid from the plan.
 
