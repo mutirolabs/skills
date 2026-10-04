@@ -1,7 +1,7 @@
 # Budgets: what an agent spends, and how to control it
 
-Every model turn, web search, image, voice message and memory lookup a
-hosted agent makes is paid work, and it is paid from the owner's plan.
+Every model turn, web search, image, voice message and decision a hosted
+agent makes is paid work, and it is paid from the owner's plan.
 This file explains how that money is counted, how to keep one agent from
 spending what the others need, and how to design an agent that does the
 same job with fewer paid calls: first the switches any owner can flip,
@@ -26,8 +26,7 @@ first question, "which agent, doing what", is answered without a trace.
 When the month's budget is spent, Mutiro refuses paid calls until it
 resets: the call fails with a plan-limit error that names the limit and
 the reset date, and the provider is never called. A refused model call
-means the agent cannot answer; a refused memory search falls back to
-keyword search. Daily figures are shown for pacing; the month is what
+means the agent cannot answer. Daily figures are shown for pacing; the month is what
 refuses.
 
 ### Agent spend limits: one agent cannot starve the rest
@@ -64,7 +63,6 @@ Leave the plan's headroom for the agents that matter most.
 | Images | `send_image_message`, `edit_image_message` |
 | Voice out | `send_voice_message` (priced by characters spoken) |
 | Voice in | voice notes people send are transcribed before the turn (priced by seconds), and `get_audio_transcript`; a transcript is made once and reused |
-| Memory | every message is indexed for `recall`, long conversations are summarized as they grow, and each `recall` search is embedded |
 | Decisions | `decide`, from the model or from your code (priced by input tokens, nothing for the answer) |
 
 **Who pays.** Paid work in an agent's conversation is charged to the
@@ -76,10 +74,13 @@ can spend it.
 
 **What is not charged to the plan:**
 
+- Message search. `message_search` covers the conversation's messages
+  from the last 30, 90 or 180 days depending on the plan; it is part of
+  the plan, not paid from its budget, and never refused for spend.
 - Connections that run on your own account, like the Browser Use
   browser (`connections.md`).
 - A self-hosted agent's model calls. The Mutiro
-  services it uses (search, images, voice, memory, decisions) are still
+  services it uses (web search, images, voice, decisions) are still
   paid from the plan.
 
 ## The switches any owner has
@@ -157,8 +158,8 @@ a scheduled message `metadata["mutiro.scheduled_message_id"]`.
 
 The hook runs as the sender (`role` is `user` for people and service
 senders alike), so it holds the sender's tools: an extension it calls must
-not be `owner_only`. Transcription and memory indexing happen before the
-hook, so skipping a message does not avoid them.
+not be `owner_only`. Transcription happens before the hook, so skipping a
+voice note does not avoid it.
 
 ### Answer pages in handlers
 

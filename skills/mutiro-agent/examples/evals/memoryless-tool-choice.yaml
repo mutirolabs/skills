@@ -14,4 +14,4 @@ prompt: |
 checks:
   - regex: "TOOL: *notes_list"
   - regex: "ARGS: *\\{.*\"subject\" *: *\"acme\""
-  - not_regex: "(?i)TOOL: *(NONE|memory|recall)"
+  - not_regex: "(?i)TOOL: *(NONE|memory|message_search)"
