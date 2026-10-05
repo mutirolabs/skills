@@ -291,6 +291,15 @@ runs it with the viewer's tools and no turn; otherwise the agent handles
 the request in a turn following the page's `HANDLERS.md`. A handler
 returns the page's result object or throws `ValidationError`.
 
+A request and its answer are hidden from the chat and dropped from later
+turns, which suits loading or saving and not starting a conversation. A
+page someone wants to discuss hands its state to the chat with
+`await mutiro.compose(text)`: the text lands in the person's composer, they
+edit and send it, and the agent receives it as their ordinary message. It
+resolves `{ placed: true }` or rejects with the reason (an older app,
+viewing as the agent, over 8,000 characters, a second call within a
+second); a page never sends a message itself.
+
 ```ts
 export const loadStatus: Handler<{ limit?: number }> = ({ payload, tools }) => {
   const res = tools.notes_list({ limit: payload.limit ?? 50 });
