@@ -169,7 +169,7 @@ behind this claim happen" is a read of that digest, not a trace. CLI
 supervision reads (`message read --view-as`) take `--limit` from 1 to 100
 (default 10; anything outside that range falls back to 50); deeper
 history is the agent's own
-`recall` and `conversation_read`. To narrow by sender or thread, use
+`message_search` and `conversation_read`. To narrow by sender or thread, use
 `agent message search --conversation <id> --view-as <agent>` with
 `--from` or `--reply-to` (no full-text search); the id is the
 `conversation_id` in `message read --json` (`mutiro user conversation id

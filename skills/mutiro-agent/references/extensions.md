@@ -273,6 +273,10 @@ export const beforeTool: BeforeTool = ({ name, args, tools }) => {
 };
 ```
 
+Settling a message in a hook with `decide` is also the cheapest way to run
+it: a classification and a lookup in code instead of turns spent finding
+out what the message is (`budgets.md`, Doing the work without a turn).
+
 Hooks are developer code: the agent cannot write or change them, so a
 rule an owner asks for in conversation becomes a change in the repo, a
 test in `tests/`, and a push.

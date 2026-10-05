@@ -24,4 +24,5 @@ mutiro auth switch <fixture_user> && mutiro agent evals run ./evals --agent <age
 Every case is a real message to the real agent: descriptions carry the
 why and the incident class, prompts carry none of it. Fixture values
 (`acme`, `globex`, `initech`) are obviously fictional on purpose; a
-realistic fake resurfaces through recall as a plausible fact.
+realistic fake resurfaces through memory or message search as a
+plausible fact.
