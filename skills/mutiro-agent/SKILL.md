@@ -150,8 +150,8 @@ The discipline, traps and the hung-agent playbook: `references/tuning.md`.
 
 `references/budgets.md`. The owner's plan has one monthly budget shared by
 all their agents; every turn, search, image, voice message and decision
-is paid from it, while memory and message search are not. `mutiro user usage` shows spend by source and by
-agent, and `mutiro agents spend-limit <agent> <usd>` keeps one agent from
+is paid from it, while memory and message search are not.
+`mutiro user usage` shows spend by source and by agent, and `mutiro agents spend-limit <agent> <usd>` keeps one agent from
 spending what the others need. The cost levers, from switching tools off
 to settling messages in a hook with `decide` so they never become a turn,
 are in that file.
