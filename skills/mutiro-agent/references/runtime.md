@@ -156,6 +156,7 @@ The platform caps, per tier:
 | Shortest recurring schedule | 24 h | 1 h | 5 min |
 | Active webhooks | 2 | 10 | 50 |
 | Webhook deliveries per day | 100 | 2000 | 20000 |
+| Message search history | 30 days | 90 days | 180 days |
 
 Schedules and webhooks count against the agent **owner's** tier, even when
 a developer creates them; creating or moving an agent counts against the
